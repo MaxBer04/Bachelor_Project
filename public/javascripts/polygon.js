@@ -14,12 +14,16 @@ export class Polygon {
     this._attributeList = [];
     this._text = "";
     this._name = "";
+    this._selectedInEditor = false;
   }
   get points() { return this._points; }
   set points(points) { this._points = points; }
 
   get name() { return this._name; }
   set name(name) { this._name = name; }
+
+  get selectedInEditor() { return this._selectedInEditor; }
+  set selectedInEditor(bool) { this._selectedInEditor = bool; }
 
   get finished() { return this._finished; }
   set finished(finished) { 
@@ -31,7 +35,7 @@ export class Polygon {
   }
 
   RGBAtoRGB(color) {
-    return color.replace(/[\d\.]+\)$/g, ')').replace(", )", ")");
+    return color.replace(/[\d\.]+\)$/g, ')').replace(",)", ")");
   }
 
   get fillColor() { return this._fillColor; }

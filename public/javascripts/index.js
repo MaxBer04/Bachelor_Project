@@ -265,6 +265,14 @@ function finishTriangle() {
   boardStateHistory.copyBoardStateToHistory(boardState);
 }
 
+export function newSelectedPolygon(polygon) {
+  //remove old selected
+  boardState.currentPolygonCollection.polygons.forEach((pol) => {
+    if(pol.ID !== polygon.ID && pol.selectedInEditor) pol.selectedInEditor = false;
+  });
+  drawer.reDrawBoardState(boardState);
+}
+
 function reset() {
   boardState.reset();
   //boardStateHistory.reset();

@@ -152,8 +152,6 @@ export class Editor {
       if(!polygonList[j].finished) continue;
       /* For each option in the original select element,
       create a new DIV that will act as an option item: */
-      console.clear();
-      console.log(JSON.stringify(polygonList));
       let emulatedOption = this.createOption(polygonList[j]);
       
       let editor = this;
@@ -180,6 +178,7 @@ export class Editor {
     const polygonList = main.boardState.currentPolygonCollection.polygons;
     for (let i = 0; i < polygonList.length; i++) {
       if (polygonList[i].ID == optionDIV.ID) {
+        polygonList[i].selectedInEditor = true;
         this._emulatedSelectText.innerHTML = optionDIV.innerHTML;
         this._emulatedSelect.ID = optionDIV.ID;
         selectedOption = this._optionList.getElementsByClassName("same-as-selected")[0];
@@ -187,6 +186,7 @@ export class Editor {
         optionDIV.classList.add("same-as-selected");
         const color = optionDIV.style.backgroundColor;
         this._emulatedSelect.setAttribute("style", `background-color: ${color}`);
+        main.newSelectedPolygon(polygonList[i]);
         this.closeAllSelect();
         this.loadAttributesAndText(polygonList[i]);
         break;

@@ -14,11 +14,49 @@ export class Drawer {
 
   set colors(colorArray) { this._colors = colorArray; }
 
-  selectPolygonFillColor(polygon) {
+  /*selectPolygonFillColor(polygon) {
     if(this._colors.length === 0) this._colors = ['rgba(0, 0, 255, 0.5)', 'rgba(255, 0, 0, 0.5)', 'rgba(0, 255, 0, 0.5)', 'rgba(255, 255, 0, 0.5)', 'rgba(255, 0, 255, 0.5)', 'rgba(255, 128, 0, 0.5)'];;
     const num = Math.floor(Math.random()*this._colors.length);
     if(polygon) polygon.fillColor = this._colors[num];
     return this._colors.splice(num, 1)[0];
+  }*/
+
+  selectPolygonFillColor(polygon) {
+    const h = Math.random() * 360,
+          s = 100,
+          l = 75;
+    const color = this.HSLToRGBA(h,s,l);
+    if(polygon) polygon.fillColor = color;
+    return color;
+  }
+
+  HSLToRGBA(h,s,l) {
+    s /= 100;
+    l /= 100;
+  
+    let c = (1 - Math.abs(2 * l - 1)) * s,
+        x = c * (1 - Math.abs((h / 60) % 2 - 1)),
+        m = l - c/2,
+        r = 0,
+        g = 0,
+        b = 0;
+    if (0 <= h && h < 60) {
+      r = c; g = x; b = 0;
+    } else if (60 <= h && h < 120) {
+      r = x; g = c; b = 0;
+    } else if (120 <= h && h < 180) {
+      r = 0; g = c; b = x;
+    } else if (180 <= h && h < 240) {
+      r = 0; g = x; b = c;
+    } else if (240 <= h && h < 300) {
+      r = x; g = 0; b = c;
+    } else if (300 <= h && h < 360) {
+      r = c; g = 0; b = x;
+    }
+    r = Math.round((r + m) * 255);
+    g = Math.round((g + m) * 255);
+    b = Math.round((b + m) * 255);
+    return `rgba(${r},${g},${b},0.5)`;
   }
 
   scaleThicknessOnZoom(factor) {
@@ -34,7 +72,8 @@ export class Drawer {
 
   drawPolygon(polygon, finished){
     this._ctx.lineWidth = this._ctx._defaultLineWidth;
-  
+    //if(polygon.selectedInEditor) this.drawSelectedPolygon(polygon, finished);
+
     this._ctx.beginPath();
     for(var i=0; i<polygon.points.length; i++){
       let X = polygon.points[i]['X'];
@@ -50,10 +89,40 @@ export class Drawer {
   
     if(finished) {
       this.finishPolygon(polygon);
+    }
+    if(polygon.selectedInEditor) {
+      this._ctx.shadowBlur = 10;
+      this._ctx.shadowColor = "black";
       this._ctx.stroke();
+      this._ctx.shadowBlur = 0;
+      this._ctx.shadowColor = "";
       return;
     }
     this._ctx.stroke();
+  }
+
+  drawSelectedPolygon(polygon, finished) {
+    let offset = 0;
+    this._ctx.beginPath();
+    for(var i=0; i<polygon.points.length; i++){
+      let X = polygon.points[i]['X'];
+      let Y = polygon.points[i]['Y'];
+      if(i==0){
+        this._ctx.moveTo(X, Y);
+        this.drawPoint(X, Y);
+      } else {
+        this._ctx.lineTo(X, Y);
+        this.drawPoint(X, Y);
+      }
+    }
+  
+    if(finished) {
+      this.finishPolygon(polygon);
+      //march(this._ctx, offset);
+      this._ctx.stroke();
+      return;
+    }
+    march(this._ctx, offset, this);
   }
   
   drawImage(img, boardConfigImage) {
@@ -105,7 +174,18 @@ export class Drawer {
 }
 
 
+function march(ctx, offset) {
+  offset++;
+  if(offset > 16) offset = 0;
+  drawDashed(ctx, offset);
+  setTimeout(march(ctx, offset), 500);
+}
 
+function drawDashed(ctx, offset) {
+  ctx.setLineDash([4, 2]);
+  ctx.lineDashOffset = -offset;
+  ctx.stroke();
+}
 
 
 

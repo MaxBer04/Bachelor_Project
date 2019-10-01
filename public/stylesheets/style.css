@@ -383,7 +383,7 @@ div[contenteditable=true] {
 .polygon-wrapper .polygon-editor .attribute-container .attributes-list .attribute {
   padding: 4px 8px;
   margin: 0px 4px;
-  color: #fff;
+  color: #000;
   display: -webkit-inline-box;
   display: -ms-inline-flexbox;
   display: inline-flex;
@@ -392,7 +392,6 @@ div[contenteditable=true] {
   -webkit-box-align: center;
       -ms-flex-align: center;
           align-items: center;
-  background-color: #1565c0;
   border-radius: 16px;
   -webkit-transition: 1s;
   transition: 1s;
