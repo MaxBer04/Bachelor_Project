@@ -1,0 +1,33 @@
+extends layout
+
+
+block content
+  .alert-box
+    ion-icon(id="alertClose" name="close")
+    span#alertText
+  .main
+    .app-Container
+      canvas(id="imageBoard" data-imgsrc="/images/Butterfly.png") Your Browser does not support Canvases :(
+      canvas(id="drawBoard" class="crosshair") 
+    .button-Container
+      .buttons
+        button#undo Undo
+        button#redo Redo
+        button#clear Clear
+        textarea(id="coordinates" disabled="disabled")
+        button#lines Lines
+        button#rectangle Rectangle
+        button#triangle Triangle
+        textarea(id="hoveredPolygons" disabled="disabled")
+  .polygon-wrapper.closeWrapper
+    .polygon-editor
+      .custom-select
+      .attribute-container
+        input(type="text" id="attributeInput" placeholder="Type here to add an attribute...")
+        .attributes-list
+      .text-container
+        h3(class="text-title") TEXT
+        textarea(class="text-input")
+  #toggleEditor
+    ion-icon(id="editorClosedIcon" name="arrow-dropup-circle")
+    ion-icon(id="editorOpenIcon" class="hideIcon" name="arrow-dropdown-circle")

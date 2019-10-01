@@ -1,0 +1,476 @@
+*, *::before, *::after {
+  -webkit-box-sizing: border-box;
+          box-sizing: border-box;
+}
+
+ion-icon {
+  cursor: pointer;
+}
+
+body {
+  margin: 0;
+  padding: 50px;
+  width: 100vw;
+  height: 100vh;
+  font-family: "montserrat", sans-serif;
+}
+
+div[contenteditable=true] {
+  outline: 0px solid transparent;
+}
+
+.alert-box {
+  width: auto;
+  height: auto;
+  color: white;
+  background-color: #1565c0;
+  -webkit-box-shadow: 0 0 10px #222222;
+          box-shadow: 0 0 10px #222222;
+  border-radius: 12px;
+  z-index: 9999;
+  position: absolute;
+  margin: 16px;
+  padding: 8px;
+  top: -100px;
+  right: 0;
+  opacity: 0;
+  display: block;
+  font-size: 1em;
+  font-weight: bold;
+  -webkit-transition: top 0.5s ease-out 0s;
+  transition: top 0.5s ease-out 0s;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -ms-flex-pack: distribute;
+      justify-content: space-around;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+}
+
+.alert-box ion-icon {
+  cursor: pointer;
+}
+
+.showAndfadeOut {
+  -webkit-animation: fadeOut 3s linear forwards;
+          animation: fadeOut 3s linear forwards;
+  top: 0px;
+}
+
+@-webkit-keyframes fadeOut {
+  0% {
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.opacityVisible {
+  opacity: 1;
+}
+
+.main {
+  display: -ms-grid;
+  display: grid;
+  -ms-grid-columns: 20% 80%;
+      grid-template-columns: 20% 80%;
+  height: 100%;
+  width: 100%;
+}
+
+.main .button-Container {
+  -ms-grid-column: 1;
+  -ms-grid-column-span: 1;
+  grid-column: 1/2;
+  -ms-grid-row: 1;
+  -ms-grid-row-span: 1;
+  grid-row: 1/2;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: justify;
+      -ms-flex-pack: justify;
+          justify-content: space-between;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+}
+
+.main .button-Container .buttons {
+  width: 80%;
+  min-height: 40%;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -ms-flex-pack: distribute;
+      justify-content: space-around;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+}
+
+.main .button-Container .buttons #coordinates, .main .button-Container .buttons #hoveredPolygons {
+  height: 200px;
+}
+
+.main .app-Container {
+  -ms-grid-column: 2;
+  -ms-grid-column-span: 1;
+  grid-column: 2/3;
+  max-height: 100%;
+  background-color: #F3F3F3;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -ms-flex-pack: distribute;
+      justify-content: space-around;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+}
+
+.main .app-Container #drawBoard, .main .app-Container #imageBoard {
+  position: absolute;
+  border: 1px solid grey;
+  background-color: rgba(0, 0, 0, 0);
+}
+
+.main .app-Container #drawBoard {
+  background-color: rgba(0, 0, 0, 0);
+}
+
+.main .app-Container #imageBoard {
+  background-color: white;
+}
+
+.main .crosshair {
+  cursor: crosshair;
+}
+
+.main .shift-pressed {
+  cursor: move;
+}
+
+.polygon-wrapper {
+  position: absolute;
+  overflow: hidden;
+  bottom: 0;
+  right: 0;
+}
+
+.polygon-wrapper.closeWrapper {
+  height: 0px;
+  width: 0px;
+}
+
+.polygon-wrapper .polygon-editor {
+  position: relative;
+  display: -ms-grid;
+  display: grid;
+  -ms-grid-columns: 100%;
+      grid-template-columns: 100%;
+  -ms-grid-rows: 20% 30% 45% 5%;
+      grid-template-rows: 20% 30% 45% 5%;
+  background-color: #f1f1f1;
+  margin: 16px;
+  padding: 60px 40px 40px 40px;
+  z-index: 90;
+  border-radius: 10px;
+  border: 1px solid black;
+  -webkit-box-shadow: 0 0 10px #7e7e7e;
+          box-shadow: 0 0 10px #7e7e7e;
+  height: 250px;
+  width: 180px;
+  -webkit-transition: all .25s ease-out;
+  transition: all .25s ease-out;
+}
+
+.polygon-wrapper .polygon-editor.openEditor {
+  height: 580px;
+  width: 360px;
+}
+
+.polygon-wrapper .polygon-editor ion-icon {
+  -webkit-transition: .4s;
+  transition: .4s;
+  -webkit-transform-origin: 50% 50%;
+          transform-origin: 50% 50%;
+}
+
+.polygon-wrapper .polygon-editor ion-icon:hover {
+  -webkit-transform: scale(1.3);
+          transform: scale(1.3);
+}
+
+.polygon-wrapper .polygon-editor .custom-select {
+  -ms-grid-row: 1;
+  -ms-grid-row-span: 1;
+  grid-row: 1/2;
+  position: relative;
+  height: 24px;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  /* style the items (options), including the selected item: */
+  /* Style items (options): */
+  /* Hide the items when the select box is closed: */
+}
+
+.polygon-wrapper .polygon-editor .custom-select select {
+  display: none;
+}
+
+.polygon-wrapper .polygon-editor .custom-select .select-selected {
+  display: -webkit-inline-box;
+  display: -ms-inline-flexbox;
+  display: inline-flex;
+  font-size: 1.2em;
+  width: 100%;
+  border-radius: 5px;
+  background: white;
+}
+
+.polygon-wrapper .polygon-editor .custom-select .select-selected > * {
+  padding: 0px 5px;
+}
+
+.polygon-wrapper .polygon-editor .custom-select .select-selected .selected-text {
+  display: inline-block;
+  min-width: 5px;
+  overflow-y: hidden;
+  white-space: nowrap;
+}
+
+.polygon-wrapper .polygon-editor .custom-select .select-selected .selected-text::-webkit-scrollbar {
+  display: none;
+}
+
+.polygon-wrapper .polygon-editor .custom-select .select-selected::after {
+  position: absolute;
+  content: "";
+  top: 10px;
+  right: 10px;
+  width: 0;
+  height: 0;
+  border: 6px solid transparent;
+  border-color: #000 transparent transparent transparent;
+}
+
+.polygon-wrapper .polygon-editor .custom-select .select-selected.select-arrow-active::after {
+  border-color: transparent transparent #000 transparent;
+  top: 6px;
+}
+
+.polygon-wrapper .polygon-editor .custom-select .select-items div, .polygon-wrapper .polygon-editor .custom-select .select-selected {
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-color: transparent transparent rgba(0, 0, 0, 0.1) transparent;
+  cursor: pointer;
+}
+
+.polygon-wrapper .polygon-editor .custom-select .select-items {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 99;
+}
+
+.polygon-wrapper .polygon-editor .custom-select .select-items > * {
+  overflow: hidden;
+}
+
+.polygon-wrapper .polygon-editor .custom-select .select-hide {
+  display: none;
+}
+
+.polygon-wrapper .polygon-editor .custom-select .select-items div:hover, .polygon-wrapper .polygon-editor .custom-select .same-as-selected {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.polygon-wrapper .polygon-editor .attribute-container {
+  -ms-grid-row: 2;
+  -ms-grid-row-span: 1;
+  grid-row: 2/3;
+}
+
+.polygon-wrapper .polygon-editor .attribute-container #attributeInput {
+  border: none;
+  margin: 8px 0px;
+  border-bottom: 2px solid #adadad;
+  font-size: 15px;
+  color: #333;
+  width: 100%;
+  outline: none;
+  background: none;
+  padding: 0 5px;
+  height: 40px;
+}
+
+.polygon-wrapper .polygon-editor .attribute-container .attributes-list {
+  width: 100%;
+  height: 40px;
+  margin: 8px 0px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+}
+
+.polygon-wrapper .polygon-editor .attribute-container .attributes-list::-webkit-scrollbar {
+  background: #ddd;
+  height: 5px;
+}
+
+.polygon-wrapper .polygon-editor .attribute-container .attributes-list::-webkit-scrollbar-track {
+  border-radius: 8px;
+}
+
+.polygon-wrapper .polygon-editor .attribute-container .attributes-list::-webkit-scrollbar-thumb {
+  background: #000;
+  border-radius: 4px;
+}
+
+.polygon-wrapper .polygon-editor .attribute-container .attributes-list .attribute {
+  padding: 4px 8px;
+  margin: 0px 4px;
+  color: #fff;
+  display: -webkit-inline-box;
+  display: -ms-inline-flexbox;
+  display: inline-flex;
+  -ms-flex-wrap: wrap;
+      flex-wrap: wrap;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  background-color: #1565c0;
+  border-radius: 16px;
+  -webkit-transition: 1s;
+  transition: 1s;
+}
+
+.polygon-wrapper .polygon-editor .attribute-container .attributes-list .attribute .attribute-text {
+  padding: 0px 6px;
+}
+
+.polygon-wrapper .polygon-editor .text-container {
+  -ms-grid-row: 3;
+  -ms-grid-row-span: 1;
+  grid-row: 3/4;
+  display: -ms-grid;
+  display: grid;
+  -ms-grid-rows: 10% 90%;
+      grid-template-rows: 10% 90%;
+}
+
+.polygon-wrapper .polygon-editor .text-container .text-title {
+  color: #333;
+  margin: 8px 0px;
+}
+
+.polygon-wrapper .polygon-editor .text-container .text-input {
+  background-color: #fff;
+  border-radius: 5px;
+  color: #333;
+  margin: 16px 0px;
+  outline: none;
+}
+
+#toggleEditor {
+  position: absolute;
+  z-index: 9000;
+  height: 30px;
+  width: 30px;
+  bottom: 0;
+  right: 0;
+  margin: 24px;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: row;
+          flex-direction: row;
+}
+
+#toggleEditor ion-icon {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  margin: 0px;
+  height: 100%;
+  width: 100%;
+}
+
+#toggleEditor ion-icon:hover {
+  -webkit-transform: scale(1.1);
+          transform: scale(1.1);
+}
+
+.hideIcon {
+  visibility: hidden;
+}
+
+.testME, .testMeMORE {
+  color: #00B7FF;
+}
+
+.testMeMORE {
+  color: green;
+}
+/*# sourceMappingURL=style.css.map */
