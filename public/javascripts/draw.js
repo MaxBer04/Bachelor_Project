@@ -72,7 +72,6 @@ export class Drawer {
 
   drawPolygon(polygon, finished){
     this._ctx.lineWidth = this._ctx._defaultLineWidth;
-    //if(polygon.selectedInEditor) this.drawSelectedPolygon(polygon, finished);
 
     this._ctx.beginPath();
     for(var i=0; i<polygon.points.length; i++){
@@ -99,30 +98,6 @@ export class Drawer {
       return;
     }
     this._ctx.stroke();
-  }
-
-  drawSelectedPolygon(polygon, finished) {
-    let offset = 0;
-    this._ctx.beginPath();
-    for(var i=0; i<polygon.points.length; i++){
-      let X = polygon.points[i]['X'];
-      let Y = polygon.points[i]['Y'];
-      if(i==0){
-        this._ctx.moveTo(X, Y);
-        this.drawPoint(X, Y);
-      } else {
-        this._ctx.lineTo(X, Y);
-        this.drawPoint(X, Y);
-      }
-    }
-  
-    if(finished) {
-      this.finishPolygon(polygon);
-      //march(this._ctx, offset);
-      this._ctx.stroke();
-      return;
-    }
-    march(this._ctx, offset, this);
   }
   
   drawImage(img, boardConfigImage) {

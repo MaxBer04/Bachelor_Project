@@ -1,4 +1,4 @@
-@import "./variables";
+@use "./variables";
 
 $nice-gradient: linear-gradient(120deg,#3498db,#1565c0,#3498db);
 
@@ -126,38 +126,47 @@ div[contenteditable=true] {
 
 .polygon-wrapper {
   position: absolute;
-  overflow: hidden;
-  bottom: 0;
-  right: 0;
+  overflow: auto;
+  overflow-y: hidden;
+  box-shadow: 0 0 10px #7e7e7e;
+  border-radius: 10px;
+  bottom: 0px;
+  right: 0px;
+  height: 580px;
+  width: 360px;
+  margin: 16px;
+  transform: scale(0);
+  transform-origin: 92% 95%;
+  //transition: width .25s ease-out;
+  //transition: height .25s ease-out;
+  transition: transform .25s ease-out;
 
-  &.closeWrapper {
-    height: 0px;
-    width: 0px;
+  &.openWrapper {
+    transform: scale(1);
   }
 
   .polygon-editor {
-    position: relative;
+    position: absolute;
+    bottom: 0;
+    right: 0;
     display: grid;
     grid-template-columns: 100%;
     grid-template-rows: 20% 30% 45% 5%;
     background-color: #f1f1f1;
-    margin: 16px;
     padding: 60px 40px 40px 40px;
-    z-index: 90;
     border-radius: 10px;
     border: 1px solid black;
-    box-shadow: 0 0 10px #7e7e7e;
-    height: 250px;
-    width: 180px;
-    transition: all .25s ease-out;
+    height: 0px;
+    width: 0px;
+    transition: all .1s ease-out;
 
     &.openEditor {
-      height: 580px;
-      width: 360px;
+      height: 100%;
+      width: 100%;
     }
 
     ion-icon {
-      transition: .4s;
+      transition: .2s;
       transform-origin: 50% 50%;
     }
 
@@ -190,6 +199,7 @@ div[contenteditable=true] {
           min-width: 5px;
           overflow-y: hidden;
           white-space: nowrap;
+          user-select: none;
 
           &::-webkit-scrollbar {
             display: none;
@@ -329,11 +339,8 @@ div[contenteditable=true] {
   margin: 24px;
   @include flexCenter(row, center);
 
-  ion-icon {
+  #editorClosedIcon, #editorOpenIcon {
     position: absolute;
-    bottom: 0;
-    right: 0;
-    margin: 0px;
     height: 100%;
     width: 100%;
   }
@@ -341,6 +348,27 @@ div[contenteditable=true] {
   ion-icon:hover {
     transform: scale(1.1);
   }
+}
+
+.deletePolygon {
+  position: absolute;
+  right: 60px;
+  bottom: 0px;
+  z-index: 9000;
+  height: 30px;
+  width: 30px;
+  margin: 24px;
+  transition: all .15s ease-out;
+}
+
+.showIcon {
+  height: 30px;
+  width: 30px;
+}
+
+.hideIconBySize {
+  height: 0;
+  width: 0;
 }
 
 .hideIcon {

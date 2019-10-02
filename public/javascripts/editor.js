@@ -13,8 +13,11 @@ export class Editor {
     const editor = document.getElementsByClassName("polygon-editor")[0];
     const wrapper = document.getElementsByClassName("polygon-wrapper")[0];
     editor.classList.toggle("openEditor");
-    wrapper.classList.toggle("closeWrapper");
+    wrapper.classList.toggle("openWrapper");
     this.toggleIcon(!isOpen);
+    const deleteIcon = document.getElementsByClassName("deletePolygon")[0];
+    deleteIcon.classList.toggle("hideIconBySize");
+    deleteIcon.classList.toggle("showIcon");
   }
 
   expand() {
@@ -22,8 +25,11 @@ export class Editor {
       const editor = document.getElementsByClassName("polygon-editor")[0];
       const wrapper = document.getElementsByClassName("polygon-wrapper")[0];
       editor.classList.add("openEditor");
-      if(wrapper.classList.contains("closeWrapper")) wrapper.classList.remove("closeWrapper");
+      wrapper.classList.add("openWrapper");
       this.toggleIcon(true);
+      const deleteIcon = document.getElementsByClassName("deletePolygon")[0];
+      deleteIcon.classList.toggle("hideIconBySize");
+      deleteIcon.classList.toggle("showIcon");
     }
   }
 
@@ -32,8 +38,11 @@ export class Editor {
       const editor = document.getElementsByClassName("polygon-editor")[0];
       const wrapper = document.getElementsByClassName("polygon-wrapper")[0];
       if(editor.classList.contains("openEditor")) editor.classList.remove("openEditor");
-      if(!wrapper.classList.contains("closeWrapper")) wrapper.classList.add("closeWrapper");
+      if(wrapper.classList.contains("openWrapper")) wrapper.classList.remove("openWrapper");
       this.toggleIcon(false);
+      const deleteIcon = document.getElementsByClassName("deletePolygon")[0];
+      deleteIcon.classList.toggle("hideIconBySize");
+      deleteIcon.classList.toggle("showIcon");
     }
   }
 
@@ -55,6 +64,7 @@ export class Editor {
   initialize() {
     this.initializeEditorSelect();
     this.initializeTextField();
+    this.disableTextField();
   }
 
   getCurrentlyFocusedPolygon() {
@@ -82,6 +92,18 @@ export class Editor {
       if(currentPolygon) currentPolygon.text = this.value;
 
     }, false);
+  }
+
+  disableTextField() {
+    const textField = document.getElementsByClassName("text-input")[0];
+    textField.setAttribute("disabled", "disabled");
+    textField.setAttribute("style", "cursor: not-allowed");
+  }
+
+  enableTextField() {
+    const textField = document.getElementsByClassName("text-input")[0];
+    textField.removeAttribute("disabled");
+    textField.removeAttribute("style");
   }
 
   initializeEditorSelect() {
@@ -150,8 +172,6 @@ export class Editor {
     const polygonList = main.boardState.currentPolygonCollection.polygons;
     for (let j = 0; j < polygonList.length; j++) {
       if(!polygonList[j].finished) continue;
-      /* For each option in the original select element,
-      create a new DIV that will act as an option item: */
       let emulatedOption = this.createOption(polygonList[j]);
       
       let editor = this;
@@ -161,6 +181,33 @@ export class Editor {
       this._optionList.appendChild(emulatedOption);
     }
     this._selectContainer.appendChild(this._optionList);
+    this.correctSelectedOption();
+  }
+
+
+  correctSelectedOption() {
+    const currentFocusedPolygon = this.getCurrentlyFocusedPolygon();
+    if(!currentFocusedPolygon || (currentFocusedPolygon && !currentFocusedPolygon.finished)) { // kein Ausgeähltes Polygon
+      main.boardState.currentPolygonCollection.polygons.forEach((pol) => {
+        pol.selectedInEditor = false;
+      });
+      this.clearAttributesAndText();
+      this._emulatedSelectText.innerHTML = "Select a Polygon: ";
+      this._emulatedSelect.setAttribute("style", "background-color: #ffffff");
+      this._emulatedSelect.ID = "";
+      this.disableTextField();
+    }
+    else {
+      const editor4 = this;
+      this.enableTextField();
+      main.boardState.currentPolygonCollection.polygons.forEach((pol) => {
+        if(pol.selectedInEditor) {
+          editor4._optionList.childNodes.forEach((optionDIV) => {
+            if(optionDIV.ID === pol.ID) editor4.bringOptionInFocus(optionDIV);
+          });
+        }
+      });
+    }
   }
 
   createOption(polygon) {
@@ -173,11 +220,12 @@ export class Editor {
 
   bringOptionInFocus(optionDIV) {
     /* When an item is clicked, update the original select box, and the selected item: */
-    if(this._emulatedSelect.ID == optionDIV.ID) return this.closeAllSelect();
+    if(this._emulatedSelect.ID === optionDIV.ID) return this.closeAllSelect();
     let selectedOption;
     const polygonList = main.boardState.currentPolygonCollection.polygons;
     for (let i = 0; i < polygonList.length; i++) {
-      if (polygonList[i].ID == optionDIV.ID) {
+      if (polygonList[i].ID === optionDIV.ID) {
+        if(document.getElementsByClassName("text-input")[0].hasAttribute("disabled")) this.enableTextField();
         polygonList[i].selectedInEditor = true;
         this._emulatedSelectText.innerHTML = optionDIV.innerHTML;
         this._emulatedSelect.ID = optionDIV.ID;
@@ -207,6 +255,11 @@ export class Editor {
   displayAttribute(attribute) {
     const attributeDIV = this.createAttributeDIV(attribute);
     document.getElementsByClassName("attributes-list")[0].appendChild(attributeDIV);
+  }
+
+  clearAttributesAndText() {
+    this.clearAllChilds(document.getElementsByClassName("attributes-list")[0]);
+    document.getElementsByClassName("text-input")[0].value = "";
   }
 
   loadAttributesAndText(polygon) {

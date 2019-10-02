@@ -1,3 +1,4 @@
+@use "./variables";
 *, *::before, *::after {
   -webkit-box-sizing: border-box;
           box-sizing: border-box;
@@ -193,18 +194,35 @@ div[contenteditable=true] {
 
 .polygon-wrapper {
   position: absolute;
-  overflow: hidden;
-  bottom: 0;
-  right: 0;
+  overflow: auto;
+  overflow-y: hidden;
+  -webkit-box-shadow: 0 0 10px #7e7e7e;
+          box-shadow: 0 0 10px #7e7e7e;
+  border-radius: 10px;
+  bottom: 0px;
+  right: 0px;
+  height: 580px;
+  width: 360px;
+  margin: 16px;
+  -webkit-transform: scale(0);
+          transform: scale(0);
+  -webkit-transform-origin: 92% 95%;
+          transform-origin: 92% 95%;
+  -webkit-transition: -webkit-transform .25s ease-out;
+  transition: -webkit-transform .25s ease-out;
+  transition: transform .25s ease-out;
+  transition: transform .25s ease-out, -webkit-transform .25s ease-out;
 }
 
-.polygon-wrapper.closeWrapper {
-  height: 0px;
-  width: 0px;
+.polygon-wrapper.openWrapper {
+  -webkit-transform: scale(1);
+          transform: scale(1);
 }
 
 .polygon-wrapper .polygon-editor {
-  position: relative;
+  position: absolute;
+  bottom: 0;
+  right: 0;
   display: -ms-grid;
   display: grid;
   -ms-grid-columns: 100%;
@@ -212,27 +230,23 @@ div[contenteditable=true] {
   -ms-grid-rows: 20% 30% 45% 5%;
       grid-template-rows: 20% 30% 45% 5%;
   background-color: #f1f1f1;
-  margin: 16px;
   padding: 60px 40px 40px 40px;
-  z-index: 90;
   border-radius: 10px;
   border: 1px solid black;
-  -webkit-box-shadow: 0 0 10px #7e7e7e;
-          box-shadow: 0 0 10px #7e7e7e;
-  height: 250px;
-  width: 180px;
-  -webkit-transition: all .25s ease-out;
-  transition: all .25s ease-out;
+  height: 0px;
+  width: 0px;
+  -webkit-transition: all .1s ease-out;
+  transition: all .1s ease-out;
 }
 
 .polygon-wrapper .polygon-editor.openEditor {
-  height: 580px;
-  width: 360px;
+  height: 100%;
+  width: 100%;
 }
 
 .polygon-wrapper .polygon-editor ion-icon {
-  -webkit-transition: .4s;
-  transition: .4s;
+  -webkit-transition: .2s;
+  transition: .2s;
   -webkit-transform-origin: 50% 50%;
           transform-origin: 50% 50%;
 }
@@ -289,6 +303,10 @@ div[contenteditable=true] {
   min-width: 5px;
   overflow-y: hidden;
   white-space: nowrap;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
 }
 
 .polygon-wrapper .polygon-editor .custom-select .select-selected .selected-text::-webkit-scrollbar {
@@ -447,11 +465,8 @@ div[contenteditable=true] {
           flex-direction: row;
 }
 
-#toggleEditor ion-icon {
+#toggleEditor #editorClosedIcon, #toggleEditor #editorOpenIcon {
   position: absolute;
-  bottom: 0;
-  right: 0;
-  margin: 0px;
   height: 100%;
   width: 100%;
 }
@@ -459,6 +474,28 @@ div[contenteditable=true] {
 #toggleEditor ion-icon:hover {
   -webkit-transform: scale(1.1);
           transform: scale(1.1);
+}
+
+.deletePolygon {
+  position: absolute;
+  right: 60px;
+  bottom: 0px;
+  z-index: 9000;
+  height: 30px;
+  width: 30px;
+  margin: 24px;
+  -webkit-transition: all .15s ease-out;
+  transition: all .15s ease-out;
+}
+
+.showIcon {
+  height: 30px;
+  width: 30px;
+}
+
+.hideIconBySize {
+  height: 0;
+  width: 0;
 }
 
 .hideIcon {

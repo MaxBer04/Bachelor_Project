@@ -275,13 +275,21 @@ export function newSelectedPolygon(polygon) {
 
 function reset() {
   boardState.reset();
-  //boardStateHistory.reset();
   drawer.resetDrawings();
   editor.populateOptionList();
   boardStateHistory.copyBoardStateToHistory(boardState);
 }
 
 function addEventListeners() {
+
+  // prevent default undo/redo bei inputs
+  Array.from(document.getElementsByTagName("input")).forEach((input) => {
+    input.addEventListener("keydown", function(evt){
+      if (evt.ctrlKey && ((evt.key === 'z' || evt.key === 'Z') || (evt.key === 'y' || evt.key === 'Y'))) {
+        evt.preventDefault();
+      }
+    });
+  });
 
   document.addEventListener("keydown", function(evt){
     if(evt.altKey) editor.expand();
@@ -354,6 +362,15 @@ function addEventListeners() {
     }
   }, false);
 
+  document.getElementsByClassName("deletePolygon")[0].addEventListener("click", function(evt){
+    const currentPolygon = editor.getCurrentlyFocusedPolygon();
+    if(!currentPolygon) return customAlert("Select a Polygon to delete please!");
+    boardState.currentPolygonCollection.removePolygon(currentPolygon.ID);
+    editor.populateOptionList();
+    boardStateHistory.copyBoardStateToHistory(boardState);
+    drawer.reDrawBoardState(boardState);
+  }, false);
+
 
   boardState.boardConfig.canvas.addEventListener("click", function(evt){
     document.body.style.mozUserSelect = document.body.style.webkitUserSelect = document.body.style.userSelect = 'none';
@@ -389,8 +406,8 @@ function addEventListeners() {
   boardState.boardConfig.canvas.addEventListener('mousemove',function(evt){
     let {X, Y} = getTranslatedMousePosition(evt);
     if(evt.altKey) {
-      boardState.hoveredPolygons = getHoveredPolygons(X, Y);
-      if(boardState.hoveredPolygons.polygons.length >= 1) editor.bringOptionInFocus(editor.getOptionDIVByPolygonID(boardState.hoveredPolygons.polygons[0].ID));
+      const hoveredPolygons = getHoveredPolygons(X, Y);
+      if(hoveredPolygons.polygons.length >= 1) editor.bringOptionInFocus(editor.getOptionDIVByPolygonID(hoveredPolygons.polygons[0].ID));
     }
     if (dragStart && evt.shiftKey && !currentlyDrawing){
 

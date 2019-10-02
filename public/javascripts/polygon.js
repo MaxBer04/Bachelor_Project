@@ -135,8 +135,13 @@ export class PolygonCollection {
     this._polygons.push(polygon);
   }
 
-  removePolygon(index) {
-    this._polygons.splice(index, 1);
+  removePolygon(ID) {
+    for(let i = 0; i < this._polygons.length; i++) {
+      if(this._polygons[i].ID === ID) {
+        this._polygons.splice(i, 1);
+        break;
+      }
+    }
   }
 }
 
