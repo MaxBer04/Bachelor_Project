@@ -1,0 +1,15 @@
+extends layout
+
+block content
+  .login-container
+    form(action="./login/signIn" method="post" class="login-form")
+      h1 Login
+      div(class="txtb" id="usernameBox")
+        input(type="text")
+        span(data-placeholder="Username")
+      div(class="txtb" id="passwordBox")
+        input(type="password")
+        span(data-placeholder="Password")
+      input(type="submit" class="logbtn" value="Login")
+      .bottom-text Don't have an accout yet? 
+        a(href="#") Sign up

@@ -4,6 +4,7 @@ import * as viewStateConstructor from "./viewState.js";
 import * as drawerConsturctor from "./draw.js";
 import * as boardStateConstructor from "./boardState.js";
 import * as editorConstructor from "./editor.js";
+import * as login from "./logger.js";
 
 let boardConfigImage;
 let boardConfigDraw;
@@ -151,6 +152,7 @@ function printCoordinates() {
 }
 
 function handlePoint(X, Y) {
+  if(boardState.currentPolygon.finished) boardState.addNewCurrentPolygon(new poly.Polygon([], false, drawer.selectPolygonFillColor()));
   if (boardState.currentPolygon.points.length>0 && X == boardState.currentPolygon.points[boardState.currentPolygon.points.length-1]['x'] && Y == boardState.currentPolygon.points[boardState.currentPolygon.points.length-1]['y']){
     // doppelter Punkt
     return false;
@@ -159,7 +161,6 @@ function handlePoint(X, Y) {
     customAlert('The line you are drawing intersect another line');
     return false;
   }
-
 
   boardState.currentPolygon.addPoint({'X':X,'Y':Y});
   drawer.drawPolygon(boardState.currentPolygon, false);
@@ -186,7 +187,6 @@ function handleFinishPoint() {
   printCoordinates();
   customAlert('Polygon closed');
   editor.populateOptionList()
-  boardState.addNewCurrentPolygon(new poly.Polygon());
   boardStateHistory.copyBoardStateToHistory(boardState);
   return false;
 }
@@ -198,7 +198,6 @@ function handleDrag(dragStart, X, Y) {
 }
 
 function startRectangle(startX, startY) {
-  boardState.revertAndRemoveCurrentPolygon();
   const rectangle = new poly.Polygon([{X:startX, Y:startY}], true, drawer.selectPolygonFillColor());
   boardState.addNewCurrentPolygon(rectangle);
   printCoordinates();
@@ -228,12 +227,10 @@ function finishRectangle() {
   drawer.reDrawBoardState(boardState);
   printCoordinates();
   editor.populateOptionList();
-  boardState.addNewCurrentPolygon(new poly.Polygon());
   boardStateHistory.copyBoardStateToHistory(boardState);
 }
 
 function startTriangle(startX, startY) {
-  boardState.revertAndRemoveCurrentPolygon();
   const triangle = new poly.Polygon([{X:startX, Y:startY}], true, drawer.selectPolygonFillColor());
   boardState.addNewCurrentPolygon(triangle);
   printCoordinates();
@@ -261,7 +258,6 @@ function finishTriangle() {
   drawer.reDrawBoardState(boardState);
   printCoordinates();
   editor.populateOptionList();
-  boardState.addNewCurrentPolygon(new poly.Polygon());
   boardStateHistory.copyBoardStateToHistory(boardState);
 }
 
@@ -486,7 +482,7 @@ function initializeDrawingCanvas() {
   boardState = boardStateConstructor.initializeNewBoardState(boardConfigDraw);
 }
 
-let initializeCanvases = new Promise(function(resolve, reject) {
+let initializeCanvases = (document.URL === "http://localhost:3000/") ? new Promise(function(resolve, reject) {
   img = new Image();
   img.addEventListener("load", function () {
     imageWidth = img.width;
@@ -498,7 +494,7 @@ let initializeCanvases = new Promise(function(resolve, reject) {
     resolve();
   });
   img.src = document.getElementById("imageBoard").getAttribute('data-imgsrc');
-});
+}) : "";
 
 function initialize() {
   document.addEventListener("DOMContentLoaded",function(){
@@ -523,4 +519,6 @@ function initialize() {
     });
   });
 }
-initialize();
+
+if(document.URL === "http://localhost:3000/") initialize();
+else login.initialize();
