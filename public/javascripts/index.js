@@ -482,19 +482,21 @@ function initializeDrawingCanvas() {
   boardState = boardStateConstructor.initializeNewBoardState(boardConfigDraw);
 }
 
-let initializeCanvases = (document.URL === "http://localhost:3000/") ? new Promise(function(resolve, reject) {
-  img = new Image();
-  img.addEventListener("load", function () {
-    imageWidth = img.width;
-    imageHeight = img.height;
-    boardConfigImage.resizeCanvasToFit(img);
+function initializeCanvases() {
+  return new Promise((resolve, reject) => {
+    img = new Image();
+    img.addEventListener("load", function () {
+      imageWidth = img.width;
+      imageHeight = img.height;
+      boardConfigImage.resizeCanvasToFit(img);
 
-    initializeDrawingCanvas();
-    
-    resolve();
+      initializeDrawingCanvas();
+      
+      resolve();
+    });
+    img.src = document.getElementById("imageBoard").getAttribute('data-imgsrc');
   });
-  img.src = document.getElementById("imageBoard").getAttribute('data-imgsrc');
-}) : "";
+}
 
 function initialize() {
   document.addEventListener("DOMContentLoaded",function(){
@@ -503,7 +505,7 @@ function initialize() {
     boardConfigImage.setContext();
     boardStateHistory = new boardStateConstructor.BoardStateHistory();
 
-    initializeCanvases.then(function(result) {
+    initializeCanvases().then(function(result) {
       viewState = new viewStateConstructor.ViewState(boardState.boardConfig); //hier also dann boardConfigDraw
       boardStateHistory.copyBoardStateToHistory(boardState);
       document.getElementById('coordinates').value = '';
@@ -520,5 +522,5 @@ function initialize() {
   });
 }
 
-if(document.URL === "http://localhost:3000/") initialize();
+if(document.URL === "http://localhost:3000/main") initialize();
 else login.initialize();

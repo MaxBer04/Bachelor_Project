@@ -4,11 +4,12 @@ import bodyParser from 'body-parser';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import logger from 'morgan';
-import sqlite from 'sqlite3';
+const sqlite = require('sqlite3').verbose();
 //import loginHandler from '/loginHandler.js';
 
-import indexRouter from './routes/index.js';
-import usersRouter from './routes/users.js';
+
+import securedMainRouter from './routes/securedMain.js';
+import mainRouter from './routes/main.js';
 import loginRouter from './routes/login.js';
 
 const DATABASE_PATH = './database/database.db';
@@ -16,13 +17,13 @@ const DATABASE_PATH = './database/database.db';
 const app = express();
 let db = new sqlite.Database(DATABASE_PATH, sqlite.OPEN_READWRITE, (err) => {
   if(err) throw err;
-  console.log("Connected to Database...");
+  //console.log("Connected to Database...");
 });
 
 db.serialize(() => {
   db.each('SELECT * FROM User', (err, row) => {
     if(err) console.error(err.message);
-    console.log(row.email+"\t"+row.first_name);
+    //console.log(row.email+"\t"+row.first_name);
   });
 });
 
@@ -31,9 +32,6 @@ db.serialize(() => {
   console.log('Database connection closed.');
 });*/
 
-function verifyToken(req, res, next) {
-
-}
 
 // view engine setup
 app.set('views', path.join(__dirname, '../views'));
@@ -43,11 +41,28 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+app.use(function (req, res, next) {
+  // check if client sent cookie
+  var cookie = req.cookies.cookieName;
+  if (cookie === undefined)
+  {
+    // no: set a new cookie
+    var randomNumber=Math.random().toString();
+    randomNumber=randomNumber.substring(2,randomNumber.length);
+    res.cookie('cookieName',randomNumber, { maxAge: 9000000, httpOnly: true });
+  }
+  next();
+});
 app.use(express.static(path.join(__dirname, '../public')));
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
+app.use('/main/secured', securedMainRouter);
+app.use('/main', mainRouter);
 app.use('/login', loginRouter);
+
+
+app.get('/', (req, res) => {
+  res.redirect('/main');
+});
 
 // catch 404 and forward to error handler 
 app.use(function(req, res, next) {

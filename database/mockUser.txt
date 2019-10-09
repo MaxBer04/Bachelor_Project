@@ -1,0 +1,1 @@
+INSERT INTO User(email, passwordHash, ID, Coverbild, verified, last_name, first_name) VALUES("kbertram6@googlemail.com", "2353fsdf", null, null, null, "Bertram", "Maximilian");
