@@ -1,10 +1,33 @@
 "use strict";
 
-let IDList = [];
-let IDListAttributes = [];
+export let IDList = [];
+export let IDListAttributes = [];
 
+export function getRescaledPolygons(polygonCollection, shrinkage) {
+  const rescaledPolygons = _.cloneDeep(polygonCollection);
+  const polygons = rescaledPolygons.polygons;
+  for(let i = 0; i< polygons.length; i++) {
+    for(let k = 0; k < polygons[i].points.length; k++) {
+      polygons[i].points[k].X = Math.round(polygons[i].points[k].X*1/shrinkage);
+      polygons[i].points[k].Y = Math.round(polygons[i].points[k].Y*1/shrinkage);
+    }
+  }
+  return rescaledPolygons;
+}
+
+export function getBackscaledPolygons(polygonCollection, shrinkage) {
+  const rescaledPolygons = _.cloneDeep(polygonCollection);
+  const polygons = rescaledPolygons.polygons;
+  for(let i = 0; i< polygons.length; i++) {
+    for(let k = 0; k < polygons[i].points.length; k++) {
+      polygons[i].points[k].X = Math.round(polygons[i].points[k].X*shrinkage);
+      polygons[i].points[k].Y = Math.round(polygons[i].points[k].Y*shrinkage);
+    }
+  }
+  return rescaledPolygons;
+}
 export class Polygon {
-  constructor(points = [], finished = false, fillColor, shape = "") {
+  constructor(points = [], finished = false, fillColor, shape = "", text = "", name ="") {
     this._points = points;
     this._finished = finished;
     this._fillColor = fillColor;
@@ -12,8 +35,8 @@ export class Polygon {
     this._shape = shape;
     this._ID = this.getNewID();
     this._attributeList = [];
-    this._text = "";
-    this._name = "";
+    this._text = text;
+    this._name = name;
     this._selectedInEditor = false;
   }
   get points() { return this._points; }
@@ -55,6 +78,8 @@ export class Polygon {
     IDList.push(ID);
     return ID;
   }
+
+  set attributes(attributes) { this._attributeList = attributes; }
 
   addAttribute(attribute) {
     this._attributeList.push(attribute);
@@ -145,17 +170,4 @@ export class PolygonCollection {
   }
 }
 
-export function getRescaledPolygons(polygonCollection, shrinkage) {
-  let rescaledPolygons = new PolygonCollection();
-  let x,y;
-  for(let i = 0; i< polygonCollection.polygons.length; i++) {
-    rescaledPolygons.addPolygon(new Polygon());
-    //if(typeof polygonCollection.polygons[i].points === "undefined") continue;
-    for(let k = 0; k < polygonCollection.polygons[i].points.length; k++) {
-      x = Math.round(polygonCollection.polygons[i].points[k].X*1/shrinkage);
-      y = Math.round(polygonCollection.polygons[i].points[k].Y*1/shrinkage);
-      rescaledPolygons.polygons[i].addPoint({"X": x, "Y": y});
-    }
-  }
-  return rescaledPolygons;
-}
+

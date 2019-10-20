@@ -5,11 +5,15 @@ import * as drawerConsturctor from "./draw.js";
 import * as boardStateConstructor from "./boardState.js";
 import * as editorConstructor from "./editor.js";
 import * as login from "./logger.js";
+import * as imageSliderConstructor from './imageSlider.js';
 
+export let socket;
+let firstTime = true;
+let imageSlider;
 let boardConfigImage;
 let boardConfigDraw;
 export let boardState;
-let boardStateHistory;
+export let boardStateHistory;
 let drawer;
 let editor;
 let viewState;
@@ -21,6 +25,7 @@ let imageHeight;
 let img;
 let editorTool = false;
 let drawDevice = "Lines";
+let supportedZoomMode = false;
 
 
 
@@ -33,24 +38,24 @@ export function customAlert(text) {
 };
 
 function checkIfInPic(X, Y) {
-  const endX = imageWidth*boardState.boardConfig.shrinkage;
-  const endY = imageHeight*boardState.boardConfig.shrinkage;
+  const endX = Math.round(imageWidth*boardState.boardConfig.shrinkage);
+  const endY = Math.round(imageHeight*boardState.boardConfig.shrinkage);
   return ((X > 0 && X < endX) && (Y > 0 && Y< endY));
 }
 
 let lastX, lastY;
 function getTranslatedMousePosition(evt) {
   try {
-    let originalX = evt.offsetX || (evt.pageX - canvas.offsetLeft);
-    let originalY = evt.offsetY || (evt.pageY - canvas.offsetTop);
+    let originalX = evt.offsetX || (evt.pageX - boardState.boardConfig.canvas.offsetLeft);
+    let originalY = evt.offsetY || (evt.pageY - boardState.boardConfig.canvas.offsetTop);
     let {X, Y} = viewState.getTransformedPoint(originalX, originalY);
     // Falls aufgrund von lags o.ä. der Browser die Mouse Position nicht direkt übermitteln kann, die letztbekannte Position zurückgeben
     lastX = X;
     lastY = Y;
     return {X, Y};
-  } catch (e) {
-    if (e instanceof ReferenceError) {
-      return {X: lastX, Y: lastY};
+  } catch(error) {
+    if (error instanceof ReferenceError) {
+      return({X: lastX, Y: lastY});
     }
   }
 }
@@ -139,18 +144,6 @@ function handleScroll(evt){
   return delta;
 };
 
-// Zurück skalierte Punkte werden ausgegeben
-function printCoordinates() {
-  let rescaledPolygons = poly.getRescaledPolygons(boardState.currentPolygonCollection, boardState.boardConfig.shrinkage);
-  let json = `{"Polygons": [`;
-  for(let i = 0; i< rescaledPolygons.polygons.length; i++) {
-    if(i < rescaledPolygons.polygons.length-1) json += `{"Polygon${i+1}": ${JSON.stringify(rescaledPolygons.polygons[i].points)}},`;
-    else json += `{"Polygon${i+1}": ${JSON.stringify(rescaledPolygons.polygons[i].points)}}`;
-  }
-  json += `]}`;
-  document.getElementById('coordinates').value = json;
-}
-
 function handlePoint(X, Y) {
   if(boardState.currentPolygon.finished) boardState.addNewCurrentPolygon(new poly.Polygon([], false, drawer.selectPolygonFillColor()));
   if (boardState.currentPolygon.points.length>0 && X == boardState.currentPolygon.points[boardState.currentPolygon.points.length-1]['x'] && Y == boardState.currentPolygon.points[boardState.currentPolygon.points.length-1]['y']){
@@ -165,7 +158,6 @@ function handlePoint(X, Y) {
   boardState.currentPolygon.addPoint({'X':X,'Y':Y});
   drawer.drawPolygon(boardState.currentPolygon, false);
   boardStateHistory.copyBoardStateToHistory(boardState);
-  printCoordinates();
   return false;
 }
 
@@ -184,8 +176,6 @@ function handleFinishPoint() {
   }
 
   drawer.drawPolygon(boardState.currentPolygon, true);
-  printCoordinates();
-  customAlert('Polygon closed');
   editor.populateOptionList()
   boardStateHistory.copyBoardStateToHistory(boardState);
   return false;
@@ -200,7 +190,6 @@ function handleDrag(dragStart, X, Y) {
 function startRectangle(startX, startY) {
   const rectangle = new poly.Polygon([{X:startX, Y:startY}], true, drawer.selectPolygonFillColor());
   boardState.addNewCurrentPolygon(rectangle);
-  printCoordinates();
   drawer.reDrawBoardState(boardState);
 }
 
@@ -219,13 +208,11 @@ function drawDynamicRectangle(newX, newY) {
     boardState.currentPolygon.replacePoint(2, p3);
     boardState.currentPolygon.replacePoint(3, p4);
   }
-  printCoordinates();
   drawer.reDrawBoardState(boardState);
 }
 
 function finishRectangle() {
   drawer.reDrawBoardState(boardState);
-  printCoordinates();
   editor.populateOptionList();
   boardStateHistory.copyBoardStateToHistory(boardState);
 }
@@ -233,7 +220,6 @@ function finishRectangle() {
 function startTriangle(startX, startY) {
   const triangle = new poly.Polygon([{X:startX, Y:startY}], true, drawer.selectPolygonFillColor());
   boardState.addNewCurrentPolygon(triangle);
-  printCoordinates();
   drawer.reDrawBoardState(boardState);
 }
 
@@ -250,13 +236,11 @@ function drawDynamicTriangle(newX, newY) {
     boardState.currentPolygon.replacePoint(1, p2);
     boardState.currentPolygon.replacePoint(2, p3);
   }
-  printCoordinates();
   drawer.reDrawBoardState(boardState);
 }
 
 function finishTriangle() {
   drawer.reDrawBoardState(boardState);
-  printCoordinates();
   editor.populateOptionList();
   boardStateHistory.copyBoardStateToHistory(boardState);
 }
@@ -276,7 +260,200 @@ function reset() {
   boardStateHistory.copyBoardStateToHistory(boardState);
 }
 
+function clearCanvases() {
+  boardConfigImage.ctx.setTransform(1,0,0,1,0,0);
+  boardConfigDraw.ctx.setTransform(1,0,0,1,0,0);
+  const {X: X1, Y: Y1} = viewState.getTransformedPoint(boardConfigImage.canvas.width, boardConfigImage.canvas.height);
+  const {X: X2, Y: Y2} = viewState.getTransformedPoint(boardConfigDraw.canvas.width, boardConfigDraw.canvas.height);
+  boardConfigImage.ctx.clearRect(0,0,X1, Y1);
+  boardConfigDraw.ctx.clearRect(0,0,X2, Y2);
+}
+
+function createBoardStateFromServerResponse(serverResponse) {
+  const polygonCollection = new poly.PolygonCollection();
+  const polygons = serverResponse.polygonCollection;
+  for(let i = 0; i < polygons.length; i++) {
+    const points = [];
+    for(let k = 0; k < polygons[i].points.length; k++) {
+      points.push(polygons[i].points[k]);
+    }
+    const attributes = [];
+    for(let m = 0; m < polygons[i].attributes.length; m++) {
+      attributes.push(new poly.Attribute(polygons[i].attributes[m].text));
+    }
+    const polygon = new poly.Polygon(points, true, polygons[i].color, polygons[i].shape, polygons[i].text, polygons[i].name);
+    polygon.attributes = attributes;
+    polygonCollection.addPolygon(polygon);
+  }
+  const currentPolygon = new poly.Polygon();
+  const backscaledPolygonCollection = poly.getBackscaledPolygons(polygonCollection, boardConfigDraw.shrinkage);
+  return new boardStateConstructor.BoardState(undefined, backscaledPolygonCollection, currentPolygon);
+}
+
+async function getBoardIfAnnotated(imageID) {
+  return new Promise((resolve, reject) => {
+    let boardState = undefined;
+    const request = new XMLHttpRequest();
+    request.open('GET', `/main/loadAnnotations/${imageID}`, true);
+    request.onreadystatechange = () => {
+      if(request.readyState === 4 && request.status === 200) {
+        const response = JSON.parse(request.responseText);
+        if(!(Object.keys(response).length === 0 && response.constructor === Object)) { // Not an empty object
+          boardState = createBoardStateFromServerResponse(response);
+        } 
+        resolve(boardState);
+      }
+    }
+    request.send();
+  });
+}
+
+export async function loadNewImage(imageID, path) {
+  if(!boardState.saved) {
+    if(confirm("Your annotations are not saved, are you sure you want to continue?")) {
+      if(document.querySelector(".image-container.active")) { 
+        const oldImageID = document.querySelector(".image-container.active").firstChild.getAttribute("data-id");
+        socket.emit('unlock', oldImageID);
+      }
+      socket.emit('lock', imageID);
+      const loadDIV = document.getElementsByClassName("waitForSave")[0];
+      loadDIV.classList.add("display");
+      let imageSetID = boardState.imageSetID;
+      poly.IDList.splice(0, poly.IDList.length);
+      poly.IDListAttributes.splice(0, poly.IDListAttributes.length);
+      editor.clear();
+      await initialize(path, imageID);
+      boardState.imageID = imageID;
+      boardState.imageSetID = imageSetID;
+      loadDIV.classList.remove("display");
+      return true;
+    }
+  } else {
+      if(document.querySelector(".image-container.active")) { 
+        const oldImageID = document.querySelector(".image-container.active").firstChild.getAttribute("data-id");
+        socket.emit('unlock', oldImageID);
+      }
+      socket.emit('lock', imageID);
+      const loadDIV = document.getElementsByClassName("waitForSave")[0];
+      loadDIV.classList.add("display");
+      let imageSetID = boardState.imageSetID;
+      poly.IDList.splice(0, poly.IDList.length);
+      poly.IDListAttributes.splice(0, poly.IDListAttributes.length);
+      editor.clear();
+      await initialize(path, imageID);
+      boardState.imageID = imageID;
+      boardState.imageSetID = imageSetID;
+      loadDIV.classList.remove("display");
+      return true;
+  }
+  return false;
+}
+
+export async function loadSetIntoApp(imageSetID) {
+  let lockedList;
+  await new Promise((resolve,reject) => {setTimeout(() => {resolve()}, 500)});
+  if(!boardState.saved) {
+    if(confirm("Your annotations are not saved, are you sure you want to continue?")) {
+      socket.emit("getLockedList", null);
+      socket.on('acceptLockedList', function(lockedListAns){
+        lockedList = lockedListAns;
+      });
+      boardState.imageID = undefined;
+      clearCanvases();
+      await initialize();
+      const request = new XMLHttpRequest();
+      request.open('GET', `/main/loadSet/${imageSetID}`, true);
+      request.onreadystatechange = () => {
+        if(request.readyState === 4 && request.status === 200) {
+          boardStateHistory.reset();
+          boardState = boardStateConstructor.initializeNewBoardState(boardConfigDraw);
+          imageSlider.initialize();
+          imageSlider.closeLoad();
+          imageSlider.loadSetIntoSlider(JSON.parse(request.response), document);
+          boardState.imageSetID = imageSetID;
+          imageSlider.lockImages(lockedList);
+          imageSlider.addEventListeners();
+        }
+      }
+      request.send();
+    }
+  } else {
+      socket.emit("getLockedList", null);
+      socket.on('acceptLockedList', function(lockedListAns){
+        lockedList = lockedListAns;
+      });
+      boardState.imageID = undefined;
+      clearCanvases();
+      await initialize();
+      const request = new XMLHttpRequest();
+      request.open('GET', `/main/loadSet/${imageSetID}`, true);
+      request.onreadystatechange = () => {
+        if(request.readyState === 4 && request.status === 200) {
+          boardStateHistory.reset();
+          boardState = boardStateConstructor.initializeNewBoardState(boardConfigDraw);
+          imageSlider.initialize();
+          imageSlider.closeLoad();
+          imageSlider.loadSetIntoSlider(JSON.parse(request.response), document);
+          boardState.imageSetID = imageSetID;
+          imageSlider.lockImages(lockedList);
+          imageSlider.addEventListeners();
+        }
+      }
+      request.send();
+  }
+}
+
+function saveBoardStateToDB() {
+  if(boardState.imageID) {
+    const loadDIV = document.getElementsByClassName("waitForSave")[0];
+    loadDIV.classList.add("display");
+    const rescaledPolygons = poly.getRescaledPolygons(boardState.currentPolygonCollection, boardState.boardConfig.shrinkage);
+    const finishedPolygons = rescaledPolygons.polygons.filter(polygon => polygon.finished);
+    const request = new XMLHttpRequest();
+    request.open('POST', `/main/saveAnnotations/${boardState.imageSetID}/${boardState.imageID}`, true);
+    request.setRequestHeader("Content-Type", "application/json");
+    request.onreadystatechange = () => {
+      if(request.readyState === 4 && request.status === 200) {
+        boardState.save();
+        loadDIV.classList.remove("display");
+        document.querySelector("button#save svg").style.fill = "#2ECC40";
+        setTimeout(() => {document.querySelector("button#save svg").style.fill = "#000";}, 2000);
+      } else {
+        document.querySelector("button#save svg").style.fill = "#FF4136";
+        setTimeout(() => {document.querySelector("button#save svg").style.fill = "#000";}, 2000);
+      }
+    }
+    request.send(JSON.stringify(finishedPolygons));
+    return;
+  }
+}
+
 function addEventListeners() {
+
+  document.getElementById("navbarMenu").addEventListener("click", (evt) => {
+    document.getElementsByClassName("navbar-menu")[0].classList.toggle("open");
+  }, false);
+
+  // SAVE BOARD
+  document.querySelector("button#save").addEventListener("click", (evt) => {
+    if(boardState.imageID){
+      saveBoardStateToDB();
+    }
+  }, false);
+
+  document.getElementById("loadImageSet").addEventListener("click", async (evt) => {
+    document.getElementsByClassName("loadScreen")[0].classList.add("cover");
+    await imageSlider.loadSets();
+  }, false);
+  try {
+    document.getElementById("uploadImageSet").addEventListener("click", (evt) => {
+      document.getElementsByClassName("uploadScreen")[0].classList.add("cover");
+    }, false);
+  } catch(error) {}
+
+  document.getElementById("uploadForImageSet").addEventListener("change", (evt) => {
+    imageSlider.handleFileUpload(document.querySelector("#uploadForImageSet").files);
+  }, false);
 
   // prevent default undo/redo bei inputs
   Array.from(document.getElementsByTagName("input")).forEach((input) => {
@@ -287,21 +464,31 @@ function addEventListeners() {
     });
   });
 
-  document.addEventListener("keydown", function(evt){
+  document.addEventListener("keydown", function(evt) {
     if(evt.altKey) editor.expand();
-    if(evt.keyCode == 27) editor.collapse();
+    if(evt.keyCode == 27) {
+      if(document.querySelector(".uploadScreen.cover")) {
+        imageSlider.closeUpload();
+        imageSlider.clearUploadForm();
+        return;
+      } else if(document.querySelector(".loadScreen.cover")) {
+        imageSlider.closeLoad();
+        return;
+      }
+      editor.collapse();
+    }
     if(evt.shiftKey) {
       document.getElementById("drawBoard").classList.remove("crosshair");
       document.getElementById("drawBoard").className = "shift-pressed";
     }
 
     if(evt.ctrlKey && evt.key=="y" || evt.key == "Y") {
-      boardState = boardStateHistory.redoBoardState() || boardState;
+      boardState = boardStateHistory.redoBoardState(editor) || boardState;
       editor.populateOptionList();
       drawer.reDrawBoardState(boardState);
     }
     else if(evt.ctrlKey && evt.key=="z" || evt.key=="Z") {
-      boardState = boardStateHistory.undoBoardState() || boardState;
+      boardState = boardStateHistory.undoBoardState(editor) || boardState;
       editor.populateOptionList();
       drawer.reDrawBoardState(boardState);
     }
@@ -314,14 +501,24 @@ function addEventListeners() {
     }
   }, false);
 
+  const controls = Array.from(document.querySelectorAll(".shapes button"));
+  controls.forEach((control) => {
+    control.addEventListener("click", function(evt){
+      if(!control.classList.contains("active")) control.classList.add("active");
+      controls.forEach((otherControl) => {
+        if(otherControl !== control && otherControl.classList.contains("active")) otherControl.classList.remove("active");
+      })
+    }, false);
+  });
+
   document.getElementById("undo").addEventListener("click", function(evt){
-    boardState = boardStateHistory.undoBoardState() || boardState;
+    boardState = boardStateHistory.undoBoardState(editor) || boardState;
     editor.populateOptionList();
     drawer.reDrawBoardState(boardState);
   }, false);
 
   document.getElementById("redo").addEventListener("click", function(evt){
-    boardState = boardStateHistory.redoBoardState() || boardState;
+    boardState = boardStateHistory.redoBoardState(editor) || boardState;
     editor.populateOptionList();
     drawer.reDrawBoardState(boardState);
   }, false);
@@ -355,6 +552,7 @@ function addEventListeners() {
       const attribute = new poly.Attribute(this.value);
       if(editor.addAttributeToFocusedPolygon(attribute)) editor.displayAttribute(attribute);
       this.value= "";
+      boardStateHistory.copyBoardStateToHistory(boardState, true, editor.getCurrentlyFocusedPolygon());
     }
   }, false);
 
@@ -366,11 +564,12 @@ function addEventListeners() {
     boardStateHistory.copyBoardStateToHistory(boardState);
     drawer.reDrawBoardState(boardState);
   }, false);
+}
 
-
+function addCanvasEventListeners() {
   boardState.boardConfig.canvas.addEventListener("click", function(evt){
     document.body.style.mozUserSelect = document.body.style.webkitUserSelect = document.body.style.userSelect = 'none';
-    const {X, Y} = getTranslatedMousePosition(evt);
+    let {X, Y} = getTranslatedMousePosition(evt)
     if(checkIfInPic(X, Y) && !evt.shiftKey){
       if((evt.which === 1 || evt.button === 0) && drawDevice === "Lines") {
         if(evt.ctrlKey){
@@ -380,11 +579,12 @@ function addEventListeners() {
         }
       }
     }
+    return;
   }, false);
 
   boardState.boardConfig.canvas.addEventListener('mousedown',function(evt){
     document.body.style.mozUserSelect = document.body.style.webkitUserSelect = document.body.style.userSelect = 'none';
-    const {X, Y} = getTranslatedMousePosition(evt);
+    let {X, Y} = getTranslatedMousePosition(evt)
     dragStart = {X, Y};
     if(!evt.shiftKey && checkIfInPic(X, Y)) {
       drawStart = {X, Y};
@@ -400,7 +600,7 @@ function addEventListeners() {
   }, false);
 
   boardState.boardConfig.canvas.addEventListener('mousemove',function(evt){
-    let {X, Y} = getTranslatedMousePosition(evt);
+    let {X, Y} = getTranslatedMousePosition(evt)
     if(evt.altKey) {
       const hoveredPolygons = getHoveredPolygons(X, Y);
       if(hoveredPolygons.polygons.length >= 1) editor.bringOptionInFocus(editor.getOptionDIVByPolygonID(hoveredPolygons.polygons[0].ID));
@@ -448,9 +648,10 @@ function addEventListeners() {
   }, false);
 
   boardState.boardConfig.canvas.addEventListener('DOMMouseScroll', function(evt) {
+    supportedZoomMode = true;
     const delta = handleScroll(evt);
     if (delta) {
-      const {X, Y} = getTranslatedMousePosition(evt);
+      let {X, Y} = getTranslatedMousePosition(evt)
       viewState.zoom(delta, X, Y);
       drawer.scaleThicknessOnZoom(Math.pow(viewState.scaleFactor,delta));
       viewState.zoomImage(delta, X, Y, boardConfigImage);
@@ -460,15 +661,17 @@ function addEventListeners() {
   },false);
 
   boardState.boardConfig.canvas.addEventListener('mousewheel', function(evt){
-    const delta = handleScroll(evt);
-    if (delta) {
-      const {X, Y} = getTranslatedMousePosition(evt);
-      viewState.zoom(delta, X, Y);
-      drawer.scaleThicknessOnZoom(Math.pow(viewState.scaleFactor,delta));
-      viewState.zoomImage(delta, X, Y, boardConfigImage);
-    };
-    drawer.clearAndDrawImage(img, boardConfigImage, imageWidth, imageHeight); 
-    drawer.reDrawBoardState(boardState);
+    if(!supportedZoomMode) {
+      const delta = handleScroll(evt);
+      if (delta) {
+        let {X, Y} = getTranslatedMousePosition(evt)
+        viewState.zoom(delta, X, Y);
+        drawer.scaleThicknessOnZoom(Math.pow(viewState.scaleFactor,delta));
+        viewState.zoomImage(delta, X, Y, boardConfigImage);
+      };
+      drawer.clearAndDrawImage(img, boardConfigImage, imageWidth, imageHeight); 
+      drawer.reDrawBoardState(boardState);
+    }
   },false);
 }
 
@@ -479,48 +682,75 @@ function initializeDrawingCanvas() {
   boardConfigDraw.canvas.height = boardConfigImage.canvas.height;
   boardConfigDraw.shrinkage = boardConfigImage.shrinkage;
   boardConfigDraw.ctx.clearRect(0, 0, boardConfigDraw.canvas.width, boardConfigDraw.canvas.height);
-  boardState = boardStateConstructor.initializeNewBoardState(boardConfigDraw);
 }
 
-function initializeCanvases() {
+function initializeCanvases(imagePath) {
   return new Promise((resolve, reject) => {
     img = new Image();
-    img.addEventListener("load", function () {
-      imageWidth = img.width;
-      imageHeight = img.height;
-      boardConfigImage.resizeCanvasToFit(img);
-
+    if(imagePath) {
+      img.addEventListener("load", function () {
+        imageWidth = img.width;
+        imageHeight = img.height;
+        boardConfigImage.resizeCanvasToFit(img);
+  
+        initializeDrawingCanvas();
+        resolve();
+      });
+      img.src = imagePath;
+    } else {
       initializeDrawingCanvas();
-      
       resolve();
-    });
-    img.src = document.getElementById("imageBoard").getAttribute('data-imgsrc');
+    }
   });
 }
 
-function initialize() {
+async function initialize(imagePath, imageID) {
+  boardConfigImage = new boardStateConstructor.BoardConfig(document.getElementById("imageBoard"), document); //zuerst mit dem image canvas
+  boardConfigImage.setContext();
+  boardStateHistory = new boardStateConstructor.BoardStateHistory();
+
+  await initializeCanvases(imagePath);
+  let serverBoardState; 
+  if(imageID) {
+    serverBoardState = await getBoardIfAnnotated(imageID);
+  }
+  if(!serverBoardState) boardState = boardStateConstructor.initializeNewBoardState(boardConfigDraw);
+  else {
+    boardState = serverBoardState;
+    boardState.boardConfig = boardConfigDraw;
+  }
+  viewState = new viewStateConstructor.ViewState(boardConfigDraw); //hier also dann boardConfigDraw
+  boardStateHistory.copyBoardStateToHistory(boardState);
+  drawer = new drawerConsturctor.Drawer(boardState, boardConfigDraw, viewState);
+  drawer.drawImage(img, boardConfigImage);
+  if(serverBoardState) {
+    drawer.reDrawBoardState(boardState);
+  }
+  boardState.save();
+
+  if(firstTime){
+    firstTime = false;
+    editor = new editorConstructor.Editor();
+    editor.initialize();
+    addEventListeners();
+    addCanvasEventListeners();
+  }
+  editor.populateOptionList();
+}
+
+if(document.URL.startsWith(window.location.origin+"/main")) {
   document.addEventListener("DOMContentLoaded",function(){
-
-    boardConfigImage = new boardStateConstructor.BoardConfig(document.getElementById("imageBoard"), document); //zuerst mit dem image canvas
-    boardConfigImage.setContext();
-    boardStateHistory = new boardStateConstructor.BoardStateHistory();
-
-    initializeCanvases().then(function(result) {
-      viewState = new viewStateConstructor.ViewState(boardState.boardConfig); //hier also dann boardConfigDraw
-      boardStateHistory.copyBoardStateToHistory(boardState);
-      document.getElementById('coordinates').value = '';
-      drawer = new drawerConsturctor.Drawer(boardState, boardConfigDraw, viewState);
-      drawer.drawImage(img, boardConfigImage);
-      drawer.boardState = boardState;
-
-      editor = new editorConstructor.Editor();
-      editor.initialize();
-      addEventListeners();
-    }, function (error)  {
-      customAlert("Loading the Image failed!");
-    });
+    socket = io.connect();
+    imageSlider = new imageSliderConstructor.ImageSlider(document);
+  
+    const cookie = document.cookie.split(';');
+    cookie.forEach((cookie) => {
+      if(cookie.split("=")[0].trim() === "newUser") {
+        customAlert("Your account was successfully created. Enjoy using the app!");
+        document.cookie = "newUser=;expires=Thu, 01 Jan 1970 00:00:01 GMT;"; //delete the cookie
+      }
+    });  
+    initialize();
   });
 }
-
-if(document.URL === "http://localhost:3000/main") initialize();
 else login.initialize();

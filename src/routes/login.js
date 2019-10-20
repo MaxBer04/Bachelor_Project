@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import DBHandler from '../databaseHandler.js';
 import base64 from 'base64url';
+const url = require('url');
 const router = express.Router();
 const urlencodedParser = bodyParser.urlencoded({extended:false});
 router.use(isLoggedIn);
@@ -26,79 +27,81 @@ router.get('/', (req, res, next)  =>{
   res.render('login');
 });
 
-router.get('/loginAttempt', (req, res)  =>{
-  const user = {
-    username: req.header('username'),
-    password: req.header('password')
-  }
+router.post('/loginAttempt', async (req, res)  =>{
+  try {
+    const user = {
+      email: req.body.email,
+      password: req.body.password
+    }
 
-  dbHandler.isValidUser(user.username, base64.encode(user.password)).then((status) => status).catch((error) => {throw error;})
-  .then((status) => {
+    const status = await dbHandler.isValidUser(user.email, base64.encode(user.password));
     if(status === 'success') {
-      getIDandAdmin(user.username).then((values) => {
-        const token = getToken(values.ID, values.isAdmin, user);
-        return [token, values.ID];
-      }).then((values) => {
-          dbHandler.getFirstAndLastname(values[1]).then((row) => {
-            user.firstName = row.first_name;
-            user.lastName = row.last_name;
-            setCookieSession(res, values[0], values[1], user);
-            res.set("status", "success");
-            res.render('index');
-          });
-        });
+      await logIn(user, res, false);
     } else {
       res.set("status", status);
-      res.json({});
+      res.send();
     }
-  })
-});
-
-
-router.get('/signUp',  (req, res, next) => {
-  const user = {
-    username: req.header('username'),
-    password: base64.encode(req.header('password')),
-    firstName: req.header("firstName"),
-    lastName: req.header("lastName")
+  } catch(error) {
+    console.error(error);
+    res.set("status", "failed");
+    res.send();
   }
-
-  dbHandler.addUser(user).then(() => {
-    getIDandAdmin(user.username).then((values) => {
-      const userPayload = {
-        username: user.username,
-        password: user.password
-      }
-      const token = getToken(values.ID, values.isAdmin, userPayload);
-      setCookieSession(res, token, values.ID, user);
-      res.set("status", "success");
-      res.render('index');
-    }).catch((error) => {
-      res.set("status", error);
-      res.json({});
-    });
-  }).catch((error) => {
-    res.set("status", error);
-    res.json({});
-  });
 });
+
+
+router.post('/signUp', async (req, res, next) => {
+  try {
+    const user = {
+      email: req.body.email,
+      password: base64.encode(req.body.password),
+      firstName: req.body.first_name,
+      lastName: req.body.last_name
+    }
+
+    await dbHandler.addUser(user);
+    await logIn(user, res, true);
+  } catch(error) {
+    res.set("status", error);
+    res.send();
+  }
+});
+
+async function logIn(user, res, newUser) {
+  const {ID, isAdmin} = await getIDandAdmin(user.email);
+  user.ID = ID;
+  user.isAdmin = isAdmin;
+  const token = getToken(ID, isAdmin, {email: user.email, password: user.password});
+  if(!user.first_name) {
+    const {first_name, last_name} = await dbHandler.getFirstAndLastname(ID);
+    user.firstName = first_name;
+    user.lastName = last_name;
+  }
+  setCookieSession(res, token, user, newUser);
+  res.redirect("/main");
+}
+
 
 function isLoggedIn(req, res, next) {
   if(req.cookies.token) res.redirect("/main");
   else next();
 }
 
+export async function isAdmin(req, res, next) {
+  const isAdmin = await dbHandler.isAdmin(req.cookies.ID);
+  if(isAdmin) next();
+  else res.status(403).send();
+}
+
 export function verifyToken(req, res, next) {
   const signOptions = {
     issuer: 'Heinrich Heine',
-    subject: req.cookies.username,
+    subject: req.cookies.email,
     audience: ''+req.cookies.ID,
-    expiresIn: "12h",
     algorithm: "RS256"
   };
-  console.log(req.cookies);
   jwt.verify(req.cookies.token, publicKEY, signOptions, (err, decodedToken) => {
-    if(err || (decodedToken.exp <= Date.now() / 1000)) {
+    if(err !== null) {
+      console.log("LOOGED OUT BECAUSE OF JWT VERIFY ERROR");
       clearCookies(res);
       res.redirect("http://localhost:3000/login");
     }
@@ -106,31 +109,33 @@ export function verifyToken(req, res, next) {
   });
 }
 
-function clearCookies(res) {
+export function clearCookies(res) {
   res.clearCookie("token");
-  res.clearCookie("username");
+  res.clearCookie("email");
   res.clearCookie("ID");
   res.clearCookie("firstName");
   res.clearCookie("lastName");
+  console.log("HIER");
 }
 
-function setCookieSession(res, token, ID, user) {
+function setCookieSession(res, token, user, newUser) {
   res.cookie("token", token);
-  res.cookie("username", user.username);
-  res.cookie("ID", ID);
+  res.cookie("email", user.email);
+  res.cookie("ID", user.ID);
   res.cookie("firstName", user.firstName);
   res.cookie("lastName", user.lastName);
+  if(newUser) res.cookie("newUser", "true");
 }
 
-function getIDandAdmin(username) {
+function getIDandAdmin(email) {
   return new Promise( (resolve, reject) => {
     const results = {};
-    dbHandler.getIDByEmail(username).then( (ID) => {
+    dbHandler.getIDByEmail(email).then( (ID) => {
       results.ID = ID;
       return ID;
     }).catch((error) => reject("ERROR GETTING THE EMAIL BY ID. "+error))
       .then( (ID) => {
-        dbHandler.checkIfAdmin(ID).then( (isAdmin) => {
+        dbHandler.isAdmin(ID).then( (isAdmin) => {
           results.isAdmin = isAdmin;
           resolve(results);
         }).catch((error) => reject("CANNOT CHECK FOR ADMIN: "+error))
@@ -142,15 +147,11 @@ function getToken(ID, isAdmin, user) {
   const payload = {isAdmin};
   const signOptions = {
     issuer: 'Heinrich Heine',
-    subject: user.username,
+    subject: user.email,
     audience: ''+ID,
-    expiresIn: "12h",
     algorithm: "RS256"
   };
   return jwt.sign(payload, privateKEY, signOptions);
 }
-
-//const verifyToken = jwt.verify(token, publicKey, verifyOptions);
-
 
 export default router;

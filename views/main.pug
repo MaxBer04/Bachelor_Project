@@ -1,23 +1,117 @@
 extends layout
 
-
 block content
+  form(class="uploadScreen" action="/main/uploadSet" method="post" encType="multipart/form-data")
+    .uploadImageContainer
+      .newImage.border
+        ion-icon(name="photos")
+        label(for="uploadForImageSet" ) Select Images
+          input(type="file" id="uploadForImageSet" name="images" accept="image/*"  multiple)
+    .uploadControls
+      input(type="text" placeholder="Title" id="imageSetTitle" name="title")
+      input(type="submit" id="submitImageSet" value="Upload")
+  .loadScreen
+    .loadControls
+      .dropdown
+        button(class="dropbtn") Sort by:
+        div(id="imageSetDrowdown" class="dropdown-content")
+          a(href="#" id="sortUploadDate") Upload Date
+          a(href="#" id="sortTitle") Title
+    .loadSetContainer
   .alert-box
     ion-icon(id="alertClose" name="close")
     span#alertText
   .main
+    .waitForSave
+      ion-icon(name="refresh")
+    .navbar
+      a(id="logo" href="/")
+        include ../public/images/Logo_HHU.svg
+      if(isAdmin)
+        .nav-upload
+          button#uploadImageSet
+            #uploadImageSetContainer
+              span Upload new Set
+              ion-icon(id="uploadIcon" name="cloud-upload")
+        .nav-load
+          button#loadImageSet
+            #loadImageSetContainer
+              span Load Set
+              ion-icon(id="loadIcon" name="images")
+        ion-icon(name="contact" id="navbarMenu")
+        .navbar-menu
+          .menuOption
+            a(href='#' id="shortcutsBtn") 
+              span Shortcuts
+              ion-icon(name="today")
+          hr
+          .menuOption
+            a(href='/settings' id="settingsBtn") 
+              span Settings
+              ion-icon(name="build")
+          hr
+          .menuOption
+            a(href='/logout' id="logoutBtn") 
+              span Logout
+              ion-icon(name="log-out")
+      else
+        .nav-load(style="justify-content: center")
+          button#loadImageSet
+            #loadImageSetContainer
+              span Load Set
+              ion-icon(id="loadIcon" name="images")
+        ion-icon(name="contact" id="navbarMenu")
+        .navbar-menu
+          .menuOption
+            a(href='#' id="shortcutsBtn") 
+              span Shortcuts
+              ion-icon(name="today")
+          hr
+          .menuOption
+            a(href='/settings' id="settingsBtn") 
+              span Settings
+              ion-icon(name="build")
+          hr
+          .menuOption
+            a(href='/logout' id="logoutBtn") 
+              span Logout
+              ion-icon(name="log-out")
+
+    .image-slider
+      .arrow-left
+        ion-icon(name="arrow-dropleft")
+      .image-slider-images
+      .arrow-right
+        ion-icon(name="arrow-dropright")
+
     .app-Container
-      canvas(id="imageBoard" data-imgsrc="/images/Butterfly.png") Your Browser does not support Canvases :(
+      canvas(id="imageBoard") Your Browser does not support Canvases :(
       canvas(id="drawBoard" class="crosshair") 
-    .button-Container
+    .leftbar
       .buttons
-        button#undo Undo
-        button#redo Redo
-        button#clear Clear
-        textarea(id="coordinates" disabled="disabled")
-        button#lines Lines
-        button#rectangle Rectangle
-        button#triangle Triangle
+        .shapes
+          button(id="lines" class="active")
+            .container
+              include ../public/images/leftbar/anchor-point.svg
+          button#rectangle
+            .container
+              include ../public/images/leftbar/square.svg
+          button#triangle
+            .container
+              include ../public/images/leftbar/triangle.svg
+        .controls
+          button#undo
+            .container
+              include ../public/images/leftbar/undo.svg
+          button#redo
+            .container
+              include ../public/images/leftbar/redo.svg
+          button#clear
+            .container
+              include ../public/images/leftbar/clear.svg
+          button#save
+            .container
+              include ../public/images/leftbar/save.svg
   .polygon-wrapper.closeWrapper
     .polygon-editor
       .custom-select

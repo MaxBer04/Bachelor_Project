@@ -149,18 +149,4 @@ export class Drawer {
 }
 
 
-function march(ctx, offset) {
-  offset++;
-  if(offset > 16) offset = 0;
-  drawDashed(ctx, offset);
-  setTimeout(march(ctx, offset), 500);
-}
-
-function drawDashed(ctx, offset) {
-  ctx.setLineDash([4, 2]);
-  ctx.lineDashOffset = -offset;
-  ctx.stroke();
-}
-
-
 

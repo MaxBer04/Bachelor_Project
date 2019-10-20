@@ -2,18 +2,15 @@ extends layout
 
 block content
   .login-container
-    form(action="./login/signUp" method="post" class="login-form")
+    form(action="/login/loginAttempt" method="post" class="login-form")
       h1 Login
       div(class="txtb" id="usernameBox")
-        input(type="text")
+        input(type="email" name="email")
         span(data-placeholder="Email")
       div(class="txtb" id="passwordBox")
-        input(type="password")
+        input(type="password" name="password")
         span(data-placeholder="Password")
       input(type="submit" class="logbtn" value="Login")
       .bottom-container
         span.bottom-text Don't have an accout yet? 
         a(id="login" href="#") Sign up
-    .signUp-ok-container
-      span.signUp-ok-text Your account was successfully created. You will now be redirected...
-      ion-icon(name="checkmark-circle-outline")

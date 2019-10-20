@@ -2,20 +2,36 @@
 $primary_main: #0d47a1;
 $primary_light: #5472d3;
 $primary-dark: #002171;
+$primary_deep: #001f3f;
 $secondary-main: #bdbdbd;
 $secondary-light: #efefef;
 $secondary-dark: #8d8d8d;
 $bg-gradient: linear-gradient(#002171, #a000ff);
 $bg-gradient-120: linear-gradient(120deg, #002171, #a000ff);
 $check-green: #2ECC40;
+$check-green-dark: rgb(3, 110, 16);
+
 
 $nice-gradient: linear-gradient(120deg,#3498db,#1565c0,#3498db);
+
+@mixin mainGradient($degree) {
+  background: linear-gradient($degree, rgba(13,71,161,1) 50%, rgb(32, 79, 233) 100%);
+}
+
+@mixin niceGradient($degree) {
+  background: linear-gradient($degree,#3498db,#1565c0,#3498db);
+}
 
 @mixin flexCenter($direction, $justify) {
   display: flex;
   justify-content: $justify;
   align-items: center;
   flex-direction: $direction;
+}
+
+*{
+  margin: 0;
+  padding: 0;
 }
 
 *, *::before, *::after {
@@ -31,13 +47,12 @@ div[contenteditable=true] {
 }
 
 body {
-  margin: 0;
-  padding: 0;
   text-decoration: none;
   width: 100vw;
-  height: 100vh;
+  height: calc(100vh - 1px);
   max-width: 100%;
   font-family: "montserrat", sans-serif;
+  overflow: hidden;
 }
 
 .login-container {
@@ -59,7 +74,6 @@ body {
     opacity: 1;
     z-index: 2;
     transition: height 1s ease-out;
-    transition: opacity .3s ease-in;
 
     h1 {
       text-align: center;
@@ -122,9 +136,6 @@ body {
       transform-origin: 50% 50%;
       animation-iteration-count: 1;
       animation-timing-function: ease-in-out;
-
-      //outline: 2px solid $nice-gradient;
-      //transition: outline 2s ease-out;
     }
     .inputWrongColor::after {
       opacity: 1;
@@ -195,32 +206,6 @@ body {
     height: 760px;
   }
 
-  .signUp-ok-container {
-    width: 460px;
-    border-radius: 10px;
-    background: #f1f1f1;
-    height: 380px;
-    padding: 60px 60px;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    opacity: 0;
-    z-index: 1;
-    transition: opacity .3s ease-in;
-    @include flexCenter(column, center);
-
-    .signUp-ok-text {
-      text-align: center;
-      font-size: 20px;
-      padding-bottom: 30px;
-    }
-
-    ion-icon {
-      font-size: 400px;
-      color: $check-green;
-    }
-  }
   .show {
     opacity: 1;
   }
@@ -267,21 +252,757 @@ body {
   opacity: 1;
 }
 
+.loadScreen {
+  position: fixed;
+  height: 100%;
+  width: 100%;
+  background: rgba(51, 51, 51, 0.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: -1;
+
+  .loadControls {
+    min-height: 100px;
+    width: 50%;
+    border: 5px solid $primary_deep;
+    background: #f1f1f1;
+    padding: 0 20px;
+    @include flexCenter(row, center);
+
+    .dropdown {
+      position: relative;
+      display: inline-block;
+      margin-right: auto;
+
+      .dropbtn {
+        background-color: $primary_deep;
+        color: white;
+        padding: 16px;
+        font-size: 16px;
+        border: none;
+        cursor: pointer;
+
+        &:hover {
+          background-color: $primary-dark;
+        }
+      }
+
+      .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: $secondary-dark;
+        min-width: 160px;
+        box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+
+
+        a {
+          color: black;
+          padding: 12px 16px;
+          border-bottom: 1px solid #111111;
+          text-decoration: none;
+          display: block;
+
+          &:hover {
+            background-color: $secondary-main;
+          }
+        }
+      }
+      .show {
+        display: block;
+        z-index: 2;
+      }
+    }
+
+  }
+
+  .loadSetContainer {
+    height: 70%;
+    width: 50%;
+    border: 5px solid $primary_deep;
+    background: #3d3d3d;
+    display: flex; 
+    flex-direction: row;
+    flex-wrap: wrap;
+    overflow: hidden;
+    overflow-y: auto;
+    position: relative;
+
+    .set-container {
+      max-height: calc((100% / 5) - 30px);
+      max-width: calc((100% / 5) - 30px);
+      margin: 15px;
+      display: grid;
+      position: relative;
+      transition: all .3s ease;
+
+      span {
+        font-weight: 600;
+        height: 100%;
+        width: 100%;
+        text-align: center;
+        color: #f1f1f1;
+      }
+
+      img {
+        grid-column: 1;
+        grid-row: 1;
+        max-width: 50%;
+        max-height: 50%;
+        position: relative;
+        top: 5px;
+        margin-left: auto;
+        margin-right: auto;
+        -webkit-user-select: none; /* webkit (safari, chrome) browsers */
+        -moz-user-select: none; /* mozilla browsers */
+        -khtml-user-select: none; /* webkit (konqueror) browsers */
+        -ms-user-select: none;
+      }
+      .imageSet-folder {
+        height: 100%;
+        width: 100%;
+        min-width: 100px;
+        min-height: 100px;
+        grid-column: 1;
+        grid-row: 1;
+        z-index: 1;
+        position: relative;
+        top: 15px;
+
+      }
+
+      &:hover {
+        transform: scale(1.1);
+
+        path {
+          box-shadow: 0px 0px 79px 42px rgba(0,0,0,0.66);
+        }
+      }
+    }
+
+  }
+}
+
+.uploadScreen {
+  position: fixed;
+  height: 100%;
+  width: 100%;
+  background: rgba(51, 51, 51, 0.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: -1;
+
+  .uploadImageContainer {
+    height: 70%;
+    width: 50%;
+    border: 5px solid $primary_deep;
+    background: #3d3d3d;
+    display: flex; 
+    flex-direction: row;
+    flex-wrap: wrap;
+    overflow: hidden;
+    overflow-y: auto;
+
+    .newImage {
+      height: calc((100% / 3) - 20px);
+      width: calc((100% / 3) - 20px);
+      margin: 10px;
+      display: flex;
+      align-items: center;
+      flex-direction: column;
+
+      img {
+        max-width: 100%;
+        max-height: 100%;
+        -webkit-user-select: none; /* webkit (safari, chrome) browsers */
+        -moz-user-select: none; /* mozilla browsers */
+        -khtml-user-select: none; /* webkit (konqueror) browsers */
+        -ms-user-select: none;
+
+      }
+
+      .delete {
+        position: relative;
+        bottom: 10%;
+        left: 45%;
+        min-height: 30px;
+        max-height: 50px;
+        cursor: pointer;
+        color: rgba(255, 0, 0, 0.6);
+
+        &:hover {
+          transform: scale(1.05);
+          color: rgba(255, 0, 0, 1);
+        }
+      }
+
+      ion-icon {
+        cursor: default;
+        height: 80%;
+        width: 90%;
+        color: #f1f1f1;
+      }
+
+      label {
+        cursor: pointer;
+        outline: none;
+        text-align: center;
+        background: none;
+        color: #f1f1f1;
+        font-weight: 400;
+        line-height: 40px;
+        border: 1px solid #f1f1f1;
+        width: 90%;
+        height: 15%;
+        transition: all .3s ease;
+        -webkit-backface-visibility: hidden;
+        -moz-backface-visibility:    hidden;
+        -ms-backface-visibility:     hidden;
+
+        &:hover {
+          border: none;
+          color: #000;
+          border-radius: 30px;
+          background: #f1f1f1;
+          transform: scale(1.05);
+        }
+
+        input {
+          display: none;
+        }
+      }
+    }
+
+    .border {
+      border: 2px solid #f1f1f1;
+    }
+
+    &::-webkit-scrollbar {
+      background: rgb(70, 70, 70);
+      height: 5px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #ddd;
+      border-radius: 4px;
+    }
+  }
+
+  .uploadControls {
+    min-height: 100px;
+    width: 50%;
+    border: 5px solid $primary_deep;
+    background: #f1f1f1;
+    padding: 0 20px;
+    @include flexCenter(row, center);
+
+    #imageSetTitle {
+      height: 50%;
+      width: 40%;
+      padding: 0 10px;
+      border: 1px solid #3d3d3d;
+
+      &:focus {
+        outline: none;
+      }
+    }
+
+    #submitImageSet {
+      cursor: pointer;
+      outline: none;
+      background: #111111;
+      color: #f1f1f1;
+      font-weight: 600;
+      border: 1px solid #3d3d3d;
+      width: 20%;
+      height: 50%;
+      transition: all .3s ease;
+      -webkit-backface-visibility: hidden;
+      -moz-backface-visibility:    hidden;
+      -ms-backface-visibility:     hidden;
+    
+      &:hover {
+        border: none;
+        color: #f1f1f1;
+        background: $check-green-dark;
+      }
+    }
+  }
+}
+.cover {
+  z-index: 9998;
+}
+
+.waitForSave {
+  width: 100%;
+  height: 100%;
+  display: none;
+  z-index: 99998;
+  position: absolute;
+  background-color: rgba(51, 51, 51, 0.5);
+
+  ion-icon {
+    width: 100px;
+    height: 100px;
+    margin: auto;
+    color: #f1f1f1;
+    animation: spin-load 1s linear;
+    animation-iteration-count: infinite;
+    animation-play-state: initial;
+  }
+
+  @keyframes spin-load {
+    0% {transform: rotate(0);}
+    50% {transform: rotate(180deg);}
+    100% {transform: rotate(360deg);}
+  }
+}
+
+.display {
+  @include flexCenter(row, center);
+
+  ion-icon {
+    animation-play-state: running;
+  }
+
+}
+
 .main {
   display: grid;
-  grid-template-columns: 20% 80%;
+  grid-template-columns: 55px auto;
+  grid-template-rows: minmax(50px, 4%) 11% 85%;
   height: 100%;
   width: 100%;
 
-  .button-Container {
+  .navbar {
+    position: relative;
+    grid-rows: 1/2;
+    grid-column: 1/3;
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+    background: $primary_deep;
+    border-bottom: 1px solid $secondary-dark;
+    @include flexCenter(row, space-between);
+
+
+
+    #logo {
+      cursor: pointer;
+      svg {
+        min-height: 0;
+        margin-left: -35px;
+        margin-bottom: -8px;
+        transform: scale(0.5);
+      }
+    }
+
+    .nav-upload, .nav-load {
+      width: 100%;
+      height: 100%;
+      margin: 0 10px;
+      display: flex;
+    }
+    .nav-load {
+      justify-content: flex-start;
+    }
+    .nav-upload {
+      justify-content: flex-end;
+    }
+
+    .navbar-menu {
+      position: absolute;
+      right: 0;
+      top: 110%;
+      color: #000;
+      background: #F3F3F3;
+      margin-right: 5px;
+      border-radius: 8px;
+      text-align: center;
+      z-index: 2;
+      display: none;
+
+      &::before {
+        content: "";
+        width: 20px;
+        height: 20px;
+        background: #F3F3F3;
+        position: absolute;
+        top: -7px;
+        left: 89%;
+        z-index: -10;
+        transform: translateX(-100%) rotate(45deg);
+      }
+
+      hr {
+        border-color: #000;
+        margin: 0 10px;
+        transition: .3s;
+      }
+
+      .menuOption {
+        max-height: 100%;
+        max-width: 100%;
+        padding: 10px;
+        font-weight: 600;
+        @include flexCenter(row, center);
+
+        &:hover {
+          background: #000;
+          cursor: pointer;
+
+          & ~ hr {
+            margin: 0;
+          }
+
+          a {
+            color: #F3F3F3;
+
+            ion-icon {
+              color: #f3f3f3;
+            }
+          }
+        }
+
+        a {
+          text-decoration: none;
+          color: #000;
+          padding: 0 10px;
+          @include flexCenter(row, center);
+
+          ion-icon {
+            max-height: 25px;
+            color: #000;
+            transition: transform .4s;
+    
+            &:hover {
+              transform: scale(1.05);
+            }
+          }
+        }
+      }
+    }
+    .open {
+      display: block;
+    }
+
+    #loadImageSet, #uploadImageSet {
+      width: auto;
+      height: 100%;
+      padding: 8px 16px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 50px;
+      outline: none;
+      color: #000;
+      cursor: pointer;
+      -webkit-backface-visibility: hidden;
+      -moz-backface-visibility:    hidden;
+      -ms-backface-visibility:     hidden;
+      transition: all .3s ease; 
+
+      #loadImageSetContainer, #uploadImageSetContainer {
+        height: inherit;
+        padding: 0 5px;
+        display: inline-flex;
+        align-items: center;
+
+        ion-icon {
+          padding-left: 10px;
+          color: black;
+          transform: scale(.65);
+        }
+      }
+    }
+
+    #loadImageSet:hover {
+      transform: scale(1.05);
+      background: $check-green;
+    }
+    #uploadImageSet:hover {
+      transform: scale(1.05);
+      background: #FF4136;
+    }
+
+    ion-icon {
+      cursor: pointer;
+      min-width: 40px;
+      height: 40px;
+      color: $secondary_light;
+    }
+    ion-icon:hover {
+      color: rgb(255, 255, 255);
+    }
+  }
+
+  .image-slider {
+    grid-rows: 2/3;
+    grid-column: 1/3;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    //@include mainGradient(180deg);
+    background: #4b6cb7;  /* fallback for old browsers */
+    background: -webkit-linear-gradient( #182848, #4b6cb7);  /* Chrome 10-25, Safari 5.1-6 */
+    background: linear-gradient( #182848, #4b6cb7); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+
+    @include flexCenter(row, space-between);
+
+    .image-slider-images {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+      display: inline-flex;
+
+      .image-container {
+        height: 100%;
+        min-width: calc(100% / 6);
+        position: relative;
+        left: 0;
+        padding: 15px 10px;
+        //border-radius: 30px 30px 0 0;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: .3s ease;
+        -webkit-backface-visibility: hidden;
+        -moz-backface-visibility:    hidden;
+        -ms-backface-visibility:     hidden;
+
+
+        .lock {
+          min-width: 100%;
+          min-height: 100%;
+          position: absolute;
+          z-index: 99998;
+          background-color: rgba(51, 51, 51, 0.5);
+          @include flexCenter(row, center);
+
+          &:hover {
+            cursor: not-allowed;
+          }
+
+          .lock-content {
+            min-width: 40%;
+            min-height: 40%;
+            background-color: #f1f1f1;
+            font-weight: 600;
+            text-align: center;
+            padding: .5em;
+            margin: 1em;
+            border-radius: 10px;
+          }
+        }
+
+        img {
+          max-width: 100%;
+          max-height: 100%;
+          -webkit-user-select: none; /* webkit (safari, chrome) browsers */
+          -moz-user-select: none; /* mozilla browsers */
+          -khtml-user-select: none; /* webkit (konqueror) browsers */
+          -ms-user-select: none;
+        }
+
+        ion-icon {
+          min-height: 20px;
+          max-height: 20%;
+          max-width: 20%;
+          position: absolute;
+          top: 0;
+          right: 0;
+          color: #ce6262;
+        }
+      }
+
+      .image-container:hover {
+        border-bottom: 5px solid #182848;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .waitForLoad {
+        width: 100%;
+        height: 100%;
+        display: none;
+        z-index: 99998;
+        position: absolute;
+        background-color: rgba(51, 51, 51, 0.5);
+      
+        ion-icon {
+          width: 100px;
+          height: 100px;
+          margin: auto;
+          color: #f1f1f1;
+          animation: spin-load 1s linear;
+          animation-iteration-count: infinite;
+          animation-play-state: initial;
+        }
+      
+        @keyframes spin-load {
+          0% {transform: rotate(0);}
+          50% {transform: rotate(180deg);}
+          100% {transform: rotate(360deg);}
+        }
+      }
+
+      .active {
+        border-bottom: 5px solid $check-green-dark;
+        background: rgba(255, 255, 255, 0.1);
+      }
+    }
+
+    .arrow-left, .arrow-right {
+      height: 100%;
+      width: 90px;
+      padding: 0 20px;
+      transition: .3s ease;
+    }
+    .arrow-left:hover {
+      box-shadow: inset 85px 0px 40px -80px rgba(0,0,0,.8);
+    }
+    .arrow-right:hover {
+      box-shadow: inset -85px 0px 40px -80px rgba(0,0,0,.8);
+    }
+
+    ion-icon {
+      height: 100%;
+      width: 100%;
+      cursor: pointer;
+      color: rgba(255, 255, 255, .7);
+      transform: scale(1.15);
+      transition: .3s ease;
+    }
+
+    ion-icon:hover {
+      color: rgba(255, 255, 255, 1);
+      transform: scale(1.2);
+    }
+    #imageLast {
+      padding-left: 10px;
+    }
+
+    #imageNext {
+      padding-right: 10px;
+    }
+  }
+
+
+  .leftbar {
     grid-column: 1/2;
-    grid-row: 1/2;
+    grid-row: 3/4;
     @include flexCenter(column, space-between);
   
     .buttons {
-      width: 80%;
+      width: 100%;
       min-height: 40%;
-      @include flexCenter(column, space-around);
+      height: 100%;
+      background: #F3F3F3;
+      border-right: 1px solid $secondary-main;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+
+      svg {
+        fill: #000;
+      }
+
+      .shapes, .controls {
+        @include flexCenter(column, space-around);
+        margin: 10px 0;
+      }
+      .controls {
+        position: relative;
+        left: 4px;
+      }
+      .controls #undo svg{
+        transform: rotate(0);
+        transition: transform .3s ease-out;
+      }
+      .controls #redo svg{
+        transform: rotate(0);
+        transition: transform .3s ease-out;
+      }
+
+      button {
+        height: 80px;
+        width: 100%;
+        margin: 0px 17px 0px 0;
+        border:none;
+        background: none;
+        cursor: pointer;
+
+        svg {
+          height: 100%;
+          padding: 10px;
+          width: 90%;
+        }
+
+        &:focus {
+          outline:none;
+        }
+      }
+
+      .container{
+        height: 80%;
+        padding: 10px 0;
+        border-radius: 0 10px 10px 0;
+        transition: all .3s ease-out;
+        svg {
+          transform: scale(1);
+          position: relative;
+          left: 3px;
+        }
+      }
+
+      .active {
+        .container {
+          background: #000;
+
+          svg {
+            transform: scale(1.2);
+            fill: #f1f1f1;
+
+            path {
+              stroke: #f1f1f1;
+              stroke-width: 2px;
+            }
+          }
+        }
+      }
+      .shapes button:hover .container{
+        background: #000;
+        box-shadow: 5px 6px 14px -4px rgba(0, 0, 0, 0.5);
+        svg {  
+          transform: scale(1.2);
+          fill: #f1f1f1;
+
+          path {
+            stroke: #f1f1f1;
+            stroke-width: 2px;
+          }
+        }
+      }
+
+      .controls button:hover svg{
+        transform: scale(1.2);
+
+        path {
+          stroke: #000;
+          stroke-width: 2px;
+        }
+      }
+      .controls #undo:hover svg{
+        transform: rotate(-60deg);
+      }
+      .controls #redo:hover svg{
+        transform: rotate(60deg);
+      }
       
       #coordinates, #hoveredPolygons {
         height: 200px;
@@ -291,9 +1012,13 @@ body {
 
   .app-Container {
     grid-column: 2/3;
+    grid-row: 3/4;
+    position: relative;
     max-height: 100%;
     background-color: #F3F3F3;
+    box-shadow: inset 2px 0 17px 5px rgba(0, 0, 0, 0.3);
     @include flexCenter(column, space-around);
+
     #drawBoard, #imageBoard {
       position: absolute;
       border: 1px solid grey;
@@ -316,7 +1041,7 @@ body {
   }
 }
 
-ion-icon { color: $primary_dark;}
+ion-icon { color: $primary_deep;}
 
 .polygon-wrapper {
   position: absolute;

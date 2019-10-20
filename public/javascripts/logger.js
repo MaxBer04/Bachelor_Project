@@ -16,121 +16,44 @@ export function initialize() {
 
   document.getElementsByClassName("logbtn")[0].addEventListener("click", (evt) => {
     const logBtn = document.getElementsByClassName("logbtn")[0];
-    evt.preventDefault();
+    const form = document.getElementsByClassName("login-form")[0];
     if(logBtn.value === "Login") {
-      const user = {
-        username: document.querySelector('input[type="text"]').value,
-        password: document.querySelector('input[type="password"]').value
+      const errors = frontendValidation();
+      if(errors.length > 0) {
+        animateWrongLogin(errors);
+        evt.preventDefault();
       }
-      logIn(user);
     } else {
-      const newUser = {
-        username: document.querySelector("#usernameBox input").value,
-        password: document.querySelector("#passwordBox input").value,
-        passwordConfirm: document.querySelector("#passwordConfirm input").value,
-        firstName: document.querySelector("#first_name input").value,
-        lastName: document.querySelector("#last_name input").value
+      const errors = frontendValidationSignUp();
+      console.log(errors);
+      if(errors.length > 0) {
+        animateWrongLogin(errors);
+        evt.preventDefault();
       }
-      signUp(newUser);
     }
   });
   addAnimationsToInputFields();
 }
 
-function logIn(user) {
-  const errors = frontendValidation(user);
-  if(errors.length === 0) {
-    backendValidation(user).then((result) => result).catch((error) => {throw error;})
-      .then((result) => {
-        if(result) {
-          animateSuccesfullLogin(false);
-          setTimeout(() => window.location = "main",1000);
-        }
-      }).catch((error) => {throw error;});
-  } else {
-    animateWrongLogin(errors);
-  }
-}
-
-function signUp(user) {
-  const errors = fontendValidationSignUp(user);
-  if(errors.length === 0) {
-    backendValidationSignUp(user).then((result) => result).catch((error) => {throw error;})
-    .then((result) => {
-      if(result) {
-        animateSuccesfullLogin(true);
-        setTimeout(() => window.location = "main",1000);
-      }
-    }).catch((error) => {throw error;});
-  } else {
-    animateWrongLogin(errors);
-  }
-}
-
-function frontendValidation(user) {
+function frontendValidation() {
   const errors = [];
-  if(user.username === "") errors.push("usernameBox");
-  if(user.password === "") errors.push("passwordBox");
+  if(!document.querySelector('#usernameBox input').value) errors.push("usernameBox");
+  if(!document.querySelector('#passwordBox input').value) errors.push("passwordBox");
   return errors;
 }
 
-function backendValidation(user) {
-  return new Promise((resolve, reject) => {
-    const request = new XMLHttpRequest();
-    request.open("GET", "/login/loginAttempt", true);
-    request.setRequestHeader("username", user.username);
-    request.setRequestHeader("password", user.password);
-    request.onreadystatechange = function() {
-      if(request.readyState === XMLHttpRequest.DONE) {
-        const status = request.getResponseHeader("status");
-        if(status !== "success") {
-          animateWrongLogin([status]);
-          resolve(false);
-        }
-        resolve(true);
-      }
-    };
-    request.send();
-  });
-}
 
-function fontendValidationSignUp(user) {
+function frontendValidationSignUp() {
   const errors = [];
-  Object.keys(user).forEach((key, index) => {
-    if(!user[key]) {
-      switch (key) {
-        case 'username': errors.push("usernameBox"); break;
-        case 'password': errors.push("passwordBox"); break;
-        case 'passwordConfirm': errors.push("passwordConfirm"); break;
-        case 'firstName': errors.push("first_name"); break;
-        case 'lastName': errors.push("last_name"); break;
-      }
-    }
-    if(user["password"] !== user["passwordConfirm"] && !errors.includes("passwordConfirm")) errors.push("passwordConfirm");
-  });
+  const password = document.querySelector('#passwordBox input').value;
+  const confirmPassword = document.querySelector('#passwordConfirm input').value;
+  if(!document.querySelector('#usernameBox input').value) errors.push("usernameBox");
+  if(!password) errors.push("passwordBox");
+  if(!confirmPassword) errors.push("passwordConfirm"); 
+  if(!document.querySelector('#first_name input').value) errors.push("first_name");
+  if(!document.querySelector('#last_name input').value) errors.push("last_name");
+  if(password !== confirmPassword && !errors.includes("passwordConfirm")) errors.push("passwordConfirm");
   return errors;
-}
-
-function backendValidationSignUp(user) {
-  return new Promise((resolve, reject) => {
-    const request = new XMLHttpRequest();
-    request.open("GET", "/login/signUp", true);
-    request.setRequestHeader("username", user.username);
-    request.setRequestHeader("password", user.password);
-    request.setRequestHeader("firstName", user.firstName);
-    request.setRequestHeader("lastName", user.lastName);
-    request.onreadystatechange = function() {
-      if(request.readyState === XMLHttpRequest.DONE) {
-        const status = request.getResponseHeader("status");
-        if(status !== "success") {
-          animateWrongLogin([status]);
-          resolve(false);
-        }
-        resolve(true);
-      }
-    };
-    request.send();
-  });
 }
 
 function animateWrongLogin(errors) {
@@ -160,20 +83,6 @@ function animateWrongLogin(errors) {
   });
 }
 
-function animateSuccesfullLogin(withFade) {
-  return new Promise((resolve, reject) => {
-    document.getElementsByClassName("logbtn")[0].classList.add("success");
-    if(withFade) {
-      setTimeout(() => {
-        document.getElementsByClassName("login-form")[0].classList.add("hide");
-        document.getElementsByClassName("signUp-ok-container")[0].classList.add("show");
-      }, 100);
-    }
-    setTimeout(() => {}, 1000);
-    resolve();
-  });
-}
-
 function addAnimationsToInputFields() {
   Array.from(document.querySelectorAll(".txtb input")).forEach((input) => {
     input.value = "";
@@ -197,7 +106,7 @@ function signUpToLoginSwitch() {
   const logButton = document.getElementsByClassName("logbtn")[0];
   const title = document.querySelector(".login-form h1");
 
-
+  loginForm.setAttribute("action", "/login/loginAttempt");
   toggleLogin.innerHTML = "Sign Up"
   bottomText.innerHTML = "Don't have an accout yet? ";
   logButton.value = "Login";
@@ -216,6 +125,7 @@ function loginToSignUpSwitch() {
   const logButton = document.getElementsByClassName("logbtn")[0];
   const title = document.querySelector(".login-form h1");
 
+  loginForm.setAttribute("action", "/login/signUp");
   toggleLogin.innerHTML = "Login"
   bottomText.innerHTML = "";
   logButton.value = "Sign Up";
@@ -233,6 +143,7 @@ function loginToSignUpSwitch() {
     containerDIV.id = newInputFields[key][0];
     const input = document.createElement("input");
     input.setAttribute("type", newInputFields[key][0] === 'passwordConfirm' ? 'password' : 'text');
+    input.setAttribute("name", key);
     containerDIV.appendChild(input);
     const span = document.createElement("span");
     span.setAttribute("data-placeholder", newInputFields[key][1]);

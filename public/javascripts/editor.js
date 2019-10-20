@@ -59,7 +59,11 @@ export class Editor {
   }
 
   save() {}
-  clear() {}
+  clear() {
+    this.clearAttributesAndText();
+    this.correctSelectedOption();
+    this.clearOptionList();
+  }
 
   initialize() {
     this.initializeEditorSelect();
@@ -76,21 +80,12 @@ export class Editor {
     return focusedPolygon;
   }
 
-  getOptionDIVByPolygonID(ID) {
-    let DIV;
-    this._optionList.childNodes.forEach((optionDIV) => {
-      if(optionDIV.ID === ID) DIV = optionDIV;
-    });
-    return DIV;
-  }
-
   initializeTextField() {
     const textField = document.getElementsByClassName("text-input")[0];
     const editor = this;
     textField.addEventListener("input", function(evt){
       const currentPolygon = editor.getCurrentlyFocusedPolygon();
       if(currentPolygon) currentPolygon.text = this.value;
-
     }, false);
   }
 
@@ -143,6 +138,7 @@ export class Editor {
 
         editor1._emulatedSelectText.toggleAttribute("contenteditable");
         main.customAlert("Name changed!");
+        main.boardStateHistory.copyBoardStateToHistory(main.boardState, true, editor1.getCurrentlyFocusedPolygon());
         return;
       }
     }, false);
@@ -167,6 +163,10 @@ export class Editor {
     this.populateOptionList();
   }
 
+  clearOptionList() {
+    this.clearAllChilds(document.getElementsByClassName("select-items")[0]);
+  }
+
   populateOptionList() {
     this.clearAllChilds(this._optionList);
     const polygonList = main.boardState.currentPolygonCollection.polygons;
@@ -185,8 +185,8 @@ export class Editor {
   }
 
 
-  correctSelectedOption() {
-    const currentFocusedPolygon = this.getCurrentlyFocusedPolygon();
+  correctSelectedOption(polygon) {
+    const currentFocusedPolygon = polygon || this.getCurrentlyFocusedPolygon();
     if(!currentFocusedPolygon || (currentFocusedPolygon && !currentFocusedPolygon.finished)) { // kein Ausgeähltes Polygon
       main.boardState.currentPolygonCollection.polygons.forEach((pol) => {
         pol.selectedInEditor = false;
@@ -210,6 +210,21 @@ export class Editor {
     }
   }
 
+  getOptionDIV(polygon) {
+    for(let i = 0; i < this._optionList.childNodes.length; i++) {
+      if(this._optionList.childNodes[i].ID === polygon.ID) return this._optionList.childNodes[i];
+    }
+  }
+
+
+  getOptionDIVByPolygonID(ID) {
+    let DIV;
+    this._optionList.childNodes.forEach((optionDIV) => {
+      if(optionDIV.ID === ID) DIV = optionDIV;
+    });
+    return DIV;
+  }
+
   createOption(polygon) {
     let emulatedOption = document.createElement("DIV");
     emulatedOption.innerHTML = polygon.name === "" ? `POLYGON: ${polygon.ID}` : polygon.name;
@@ -219,8 +234,7 @@ export class Editor {
   }
 
   bringOptionInFocus(optionDIV) {
-    /* When an item is clicked, update the original select box, and the selected item: */
-    if(this._emulatedSelect.ID === optionDIV.ID) return this.closeAllSelect();
+    this.closeAllSelect();
     let selectedOption;
     const polygonList = main.boardState.currentPolygonCollection.polygons;
     for (let i = 0; i < polygonList.length; i++) {
@@ -305,12 +319,14 @@ export class Editor {
     attributeText.addEventListener("input", function(evt){
       attribute.preSaveContent = this.innerHTML;
     }, false);
+    const editor = this;
     attributeText.addEventListener("keydown", function(evt) {
       if(evt.keyCode === 13) {
         evt.preventDefault();
         attribute.content = attribute.preSaveContent;
         attributeText.innerHTML = attribute.preSaveContent;
         main.customAlert("Attribute changed!");
+        main.boardStateHistory.copyBoardStateToHistory(main.boardState, true, editor.getCurrentlyFocusedPolygon());
         return;
       }
     }, false);
@@ -318,10 +334,10 @@ export class Editor {
     const ionIcon = document.createElement("ion-icon");
     ionIcon.setAttribute("class", "delete-attribute");
     ionIcon.setAttribute("name", "close");
-    const editor = this;
     ionIcon.addEventListener("click", function(evt) {
       editor.deleteAttributeFromCurrentPolygon(attribute);
       editor.deleteAttributeFromView(attribute);
+      main.boardStateHistory.copyBoardStateToHistory(main.boardState, true, editor.getCurrentlyFocusedPolygon());
     }, false);
 
     attributeDIV.appendChild(attributeText);

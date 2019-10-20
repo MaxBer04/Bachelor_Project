@@ -2,7 +2,6 @@ CREATE TABLE User(
 	email VARCHAR NOT NULL,
 	passwordHash VARCHAR NOT NULL,
 	ID Integer NOT NULL,
-	Coverbild BLOB,
 	verified BOOLEAN,
 	first_name VARCHAR NOT NULL CHECK(first_name <> '' AND first_name NOT GLOB '*[^a-zA-Z]*'),
 	last_name VARCHAR NOT NULL CHECK(last_name <> '' AND last_name NOT GLOB '*[^a-zA-Z]*'),
@@ -25,6 +24,8 @@ CREATE TABLE ImageSet(
 CREATE TABLE Image(
 	ID Integer NOT NULL,
 	imageSetID Integer NOT NULL,
+	path VARCHAR NOT NULL,
+	type VARCHAR NOT NULL,
 	FOREIGN key(imageSetID) REFERENCES ImageSet(ID) ON UPDATE CASCADE ON DELETE CASCADE,
 	PRIMARY key(ID)
 );
@@ -36,7 +37,7 @@ CREATE TABLE Annotation(
 	text VARCHAR,
 	color VARCHAR NOT NULL,
 	name VARCHAR,
-	FOREIGN key(imageID) REFERENCES Image(ID) ON UPDATE CASCADE ON DELETE CASCADE,
+	FOREIGN key(imageID) REFERENCES Image(ID) ON UPDATE CASCADE,
 	PRIMARY key(ID)
 );
 
@@ -44,22 +45,15 @@ CREATE TABLE Attribut(
 	ID Integer NOT NULL,
 	annotationID Integer NOT NULL,
 	text VARCHAR,
-	FOREIGN key(annotationID) REFERENCES Annotation(ID) ON UPDATE CASCADE ON DELETE CASCADE,
+	FOREIGN key(annotationID) REFERENCES Annotation(ID) ON UPDATE CASCADE,
 	PRIMARY key(ID)
 );
-
-CREATE TABLE Path(
-	ID Integer NOT NULL,
-	annotationID Integer NOT NULL,
-	shape VARCHAR,
-	FOREIGN key(annotationID) REFERENCES Annotation(ID) ON UPDATE CASCADE ON DELETE CASCADE,
-	PRIMARY key(ID)
-);
-
 CREATE TABLE Point(
 	ID Integer NOT NULL,
 	X Integer NOT NULL,
 	Y Integer NOT NULL,
+	annotationID Integer NOT NULL,
+	FOREIGN key(annotationID) REFERENCES Annotation(ID) ON UPDATE CASCADE,
 	PRIMARY key(ID)
 );
 
@@ -67,16 +61,26 @@ CREATE TABLE Notification(
 	ID Integer NOT NULL,
 	send_by Integer NOT NULL,
 	imageSetID Integer NOT NULL,
-	timestamp DATE NOT NULL,
+	send_date DATE NOT NULL,
 	text VARCHAR,
-	FOREIGN key(send_by) REFERENCES User(ID) ON UPDATE CASCADE ON DELETE CASCADE,
-	FOREIGN key(imageSetID) REFERENCES ImageSet(ID) ON UPDATE CASCADE ON DELETE CASCADE,
+	FOREIGN key(send_by) REFERENCES User(ID) ON UPDATE CASCADE,
+	FOREIGN key(imageSetID) REFERENCES ImageSet(ID) ON UPDATE CASCADE,
 	PRIMARY key(ID)
+);
+
+CREATE TABLE Image_annotated_by_User(
+	imageID Integer NOT NULL,
+	userID Integer NOT NULL,
+	timestamp DATE NOT NULL,
+	FOREIGN key(imageID) REFERENCES Image(ID) ON UPDATE CASCADE ON DELETE CASCADE,
+	FOREIGN key(userID) REFERENCES User(ID) ON UPDATE CASCADE ON DELETE CASCADE,
+	PRIMARY key(userID, imageID)
 );
 
 CREATE TABLE ImageSet_annotated_by_User(
 	imageSetID Integer NOT NULL,
 	userID Integer NOT NULL,
+	timestamp DATE NOT NULL,
 	FOREIGN key(imageSetID) REFERENCES ImageSet(ID) ON UPDATE CASCADE ON DELETE CASCADE,
 	FOREIGN key(userID) REFERENCES User(ID) ON UPDATE CASCADE ON DELETE CASCADE,
 	PRIMARY key(imageSetID, userID)
@@ -104,12 +108,4 @@ CREATE TABLE Notification_for_Image(
 	FOREIGN key(imageID) REFERENCES Image(ID) ON UPDATE CASCADE ON DELETE CASCADE,
 	FOREIGN key(notificationID) REFERENCES Notification(ID) ON UPDATE CASCADE ON DELETE CASCADE,
 	PRIMARY key(imageID)
-);
-
-CREATE TABLE Path_has_Points(
-	pathID Integer NOT NULL,
-	pointID Integer NOT NULL,
-	FOREIGN key(pathID) REFERENCES Path(ID) ON UPDATE CASCADE ON DELETE CASCADE,
-	FOREIGN key(pointID) REFERENCES Point(ID) ON UPDATE CASCADE ON DELETE CASCADE,
-	PRIMARY key(pathID, pointID)
 );

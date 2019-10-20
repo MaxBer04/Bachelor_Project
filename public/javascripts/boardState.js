@@ -1,12 +1,46 @@
 import * as poly from "./polygon.js";
 
+
+
+export function initializeNewBoardState(boardConfig) {
+  let polygon = new poly.Polygon();
+  let boardState = new BoardState(boardConfig, new poly.PolygonCollection(), polygon);
+  boardState.currentPolygonCollection.addPolygon(polygon);
+  return boardState;
+}
 export class BoardState {
-  constructor(boardConfig, currentPolygonCollection, currentPolygon, hoveredPolygons) {
+  constructor(boardConfig, currentPolygonCollection, currentPolygon, hoveredPolygons, imageSetID, imageID) {
     this._boardConfig = boardConfig;
     this._currentPolygonCollection = currentPolygonCollection;
     this._currentPolygon = currentPolygon;
     this._hoveredPolygons = hoveredPolygons;
+    this._editorChange = false;
+    this._currentlyFocusedPolygon = undefined;
+    this._imageSetID = imageSetID;
+    this._imageID = imageID;
+    this._saved = true;
   }
+
+  save() {
+    this._saved = true;
+  }
+  unsave() {
+    this._saved = false;
+  }
+
+  get saved() { return this._saved; }
+
+  get editorChange() { return this._editorChange; }
+  set editorChange(bool) { this._editorChange = bool; }
+
+  get currentlyFocusedPolygon() { return this._currentlyFocusedPolygon; }
+  set currentlyFocusedPolygon(polygon) { this._currentlyFocusedPolygon = polygon; }
+
+  get imageSetID() { return this._imageSetID; }
+  set imageSetID(imageSetID) { this._imageSetID = imageSetID; }
+
+  get imageID() { return this._imageID; }
+  set imageID(imageID) { this._imageID = imageID; }
 
   get boardConfig() { return this._boardConfig; }
   set boardConfig(boardConfig) { this._boardConfig = boardConfig; }
@@ -49,24 +83,51 @@ export class BoardStateHistory {
   get history() { return this._history; }
   get position() { return this._position; }
 
-  undoBoardState() {
+  undoBoardState(editor) {
     if(this._position === 0) return; // ersten BoardState erreicht
+
+    
+    const newerBoardState = this._history[this._position];
+    if(newerBoardState.editorChange) this.undoEditorState(editor, newerBoardState.currentlyFocusedPolygon);
+
     this._position -= 1;
     return _.cloneDeep(this._history[this._position]);
   }
 
-  redoBoardState() {
+  redoBoardState(editor) {
     if(this._position === this._history.length-1) return; //aktuellster BoardState erreicht
+
+
     this._position += 1;
-    return _.cloneDeep(this._history[this._position]);
+    const oldBoardState = this._history[this._position];
+    if(oldBoardState.editorChange) this.redoEditorState(editor, oldBoardState.currentlyFocusedPolygon);
+
+    return _.cloneDeep(this._history[this._position]);;
   }
 
-  copyBoardStateToHistory(boardState) {
+  undoEditorState(editor, polygon) {
+    editor.expand();
+    editor.bringOptionInFocus(editor.getOptionDIV(polygon));
+  }
+
+  redoEditorState(editor, polygon) {
+    editor.expand();
+    editor.bringOptionInFocus(editor.getOptionDIV(polygon));
+  }
+
+  copyBoardStateToHistory(boardState, editorChange, currentlyFocusedPolygon) {
+    if(!(boardState.currentPolygonCollection.polygons.length === 1 && boardState.currentPolygon.points.length === 0)) boardState.unsave();
     // Alle möglichen Redos löschen
+    if(editorChange) {
+      boardState.editorChange = true;
+      boardState.currentlyFocusedPolygon = _.cloneDeep(currentlyFocusedPolygon);
+    } else {
+      boardState.editorChange = false;
+      boardState.currentlyFocusedPolygon = undefined;
+    }
     for(let i = this._history.length; i > this._position+1; i--) {
       this._history.pop();
     }
-
     let boardStateCopy = _.cloneDeep(boardState);
     this._history.push(boardStateCopy);
     this._position++;
@@ -126,8 +187,8 @@ export class BoardConfig {
     if(this._canvas.width > appContainer.offsetWidth) {
       this._shrinkage = appContainer.offsetWidth/this._canvas.width;
     }
-    if(this._canvas.height > main.offsetHeight) {
-      yShrink = main.offsetHeight/this._canvas.height;
+    if(this._canvas.height > appContainer.offsetHeight) {
+      yShrink = appContainer.offsetHeight/this._canvas.height;
       if(yShrink < this._shrinkage) this._shrinkage = yShrink;
     }
     this._canvas.width = this._canvas.width * this._shrinkage;
@@ -137,11 +198,4 @@ export class BoardConfig {
   clear() {
     this_.ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
   }
-}
-
-export function initializeNewBoardState(boardConfig) {
-  let polygon = new poly.Polygon();
-  let boardState = new BoardState(boardConfig, new poly.PolygonCollection(), polygon);
-  boardState.currentPolygonCollection.addPolygon(polygon);
-  return boardState;
 }
