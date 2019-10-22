@@ -116,6 +116,7 @@ function signUpToLoginSwitch() {
   loginForm.removeChild(loginForm.childNodes[3]);
   loginForm.removeChild(loginForm.childNodes[3]);
   loginForm.removeChild(loginForm.childNodes[3]);
+  loginForm.removeChild(loginForm.childNodes[3]);
 }
 
 function loginToSignUpSwitch() {
@@ -151,4 +152,13 @@ function loginToSignUpSwitch() {
     loginForm.insertBefore(containerDIV, loginForm.childNodes[counter]);
     counter++;
   });
+  const adminCheck = document.createElement("input");
+  adminCheck.setAttribute("type", "checkbox");
+  adminCheck.setAttribute("name", "adminCheck");
+  adminCheck.id = "adminCheck";
+  const label = document.createElement("label");
+  label.innerHTML = "as Admin";
+  label.setAttribute("for", "adminCheck");
+  loginForm.insertBefore(adminCheck, loginForm.childNodes[6]);
+  loginForm.insertBefore(label, loginForm.childNodes[7]);
 }

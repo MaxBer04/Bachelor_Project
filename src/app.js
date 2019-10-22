@@ -4,7 +4,8 @@ import bodyParser from 'body-parser';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import logger from 'morgan';
-import {verifyToken, clearCookies} from './routes/login.js';
+import DBHandler from './databaseHandler.js';
+import {verifyToken, clearCookies, verifyAdminRequestNumber, verifyUser} from './routes/login.js';
 
 import mainRouter from './routes/main.js';
 import loginRouter from './routes/login.js';
@@ -46,6 +47,28 @@ app.use('/login', loginRouter);
 
 app.get('/', (req, res) => {
   res.redirect('/main');
+});
+
+
+app.get('/verifyAsAdmin/:number/:userID', async (req, res) => {
+  if(verifyAdminRequestNumber(Number(req.params.number))) {
+    const dbHandler = new DBHandler();
+    await dbHandler.setUserVerified(req.params.userID);
+    await dbHandler.setUserAsAdmin(req.params.userID);
+    dbHandler.close();
+    res.status(200).send();
+  }
+  else res.status(500).send();
+});
+
+app.get('/verify/:number/:userID', async (req, res) => {
+  if(verifyUser(Number(req.params.number))) {
+    const dbHandler = new DBHandler();
+    await dbHandler.setUserVerified(req.params.userID);
+    dbHandler.close()
+    res.status(200).send();
+  }
+  else res.status(500).send();
 });
 
 app.get('/logout', verifyToken, (req,res) => {

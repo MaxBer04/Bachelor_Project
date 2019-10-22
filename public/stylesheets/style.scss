@@ -75,6 +75,16 @@ body {
     z-index: 2;
     transition: height 1s ease-out;
 
+    #adminCheck {
+      height: 20px;
+      width: 20px;
+      margin-bottom: 20px;
+      margin-right: 20px;
+    }
+    label {
+      color: #545454;
+    }
+
     h1 {
       text-align: center;
       margin-bottom: 80px;
@@ -203,7 +213,7 @@ body {
     opacity: 0;
   }
   .bigger {
-    height: 760px;
+    height: 860px;
   }
 
   .show {
@@ -948,6 +958,24 @@ body {
         }
       }
 
+      .disabled {
+        height: 80px;
+        width: 100%;
+        margin: 0px 17px 0px 0;
+        position: relative;
+        z-index: 10;
+        cursor: not-allowed;
+
+        &:hover {
+          button {
+            cursor: not-allowed;
+            svg {
+              fill: red;
+            }
+          }
+        }
+      }
+
       .container{
         height: 80%;
         padding: 10px 0;
@@ -1056,8 +1084,6 @@ ion-icon { color: $primary_deep;}
   margin: 16px;
   transform: scale(0);
   transform-origin: 92% 95%;
-  //transition: width .25s ease-out;
-  //transition: height .25s ease-out;
   transition: transform .25s ease-out;
 
   &.openWrapper {
@@ -1173,6 +1199,7 @@ ion-icon { color: $primary_deep;}
 
     .attribute-container {
       grid-row: 2/3;
+      position: relative;
 
       #attributeInput {
         border:none;
@@ -1185,6 +1212,57 @@ ion-icon { color: $primary_deep;}
         background: none;
         padding: 0 5px;
         height: 40px;
+      }
+
+      .suggestions-list {
+        position: absolute;
+        height: auto;
+        max-height: 300px;
+        overflow: hidden;
+        overflow-y: auto;
+        width: 100%;
+        top: 50px;
+        z-index: 1;
+        display: none;
+        
+        &::-webkit-scrollbar {
+          background:#fff;
+          width: 10px;
+        }
+
+        &::-webkit-scrollbar-track {
+          border-radius: 8px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background: #000;
+        }
+
+        .attribute-suggestion {
+          @include flexCenter(row, space-between);
+          color: #f1f1f1;
+          height: 35px;
+          width: 100%;
+          padding: 5px 15px;
+          font-weight: 600;
+          background: $primary_deep;
+          transition: .2s;
+
+          &:hover {
+            cursor: pointer;
+            background: #020b90;
+          }
+
+          #text {
+            max-width: 80%
+          }
+          #count {
+            max-width: 20%;
+          }
+        }
+      }
+      .show {
+        display: block;
       }
 
       .attributes-list {
@@ -1230,6 +1308,7 @@ ion-icon { color: $primary_deep;}
       grid-row: 3/4;
       display: grid;
       grid-template-rows: 10% 90%;
+      position: relative;
 
       .text-title {
       color: #333;
@@ -1240,10 +1319,23 @@ ion-icon { color: $primary_deep;}
         background-color: #fff;
         border-radius: 5px;
         color: #333;
-        margin: 16px 0px;
+        width: calc(100% - 40px);
+        height: calc(100% - 32px);
+        margin: 16px 0;
         outline: none;
       }
+      #saveTextInput {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 30px;
+        height: 40px;
+        margin: 10px 0;
+      }
 
+      .saved {
+        border-color: $check-green;
+      }
     }
   }
 }

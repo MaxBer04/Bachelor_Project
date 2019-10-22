@@ -48,6 +48,17 @@ body {
   transition: height 1s ease-out;
 }
 
+.login-container .login-form #adminCheck {
+  height: 20px;
+  width: 20px;
+  margin-bottom: 20px;
+  margin-right: 20px;
+}
+
+.login-container .login-form label {
+  color: #545454;
+}
+
 .login-container .login-form h1 {
   text-align: center;
   margin-bottom: 80px;
@@ -252,7 +263,7 @@ body {
 }
 
 .login-container .bigger {
-  height: 760px;
+  height: 860px;
 }
 
 .login-container .show {
@@ -1321,6 +1332,23 @@ body {
   outline: none;
 }
 
+.main .leftbar .buttons .disabled {
+  height: 80px;
+  width: 100%;
+  margin: 0px 17px 0px 0;
+  position: relative;
+  z-index: 10;
+  cursor: not-allowed;
+}
+
+.main .leftbar .buttons .disabled:hover button {
+  cursor: not-allowed;
+}
+
+.main .leftbar .buttons .disabled:hover button svg {
+  fill: red;
+}
+
 .main .leftbar .buttons .container {
   height: 80%;
   padding: 10px 0;
@@ -1612,6 +1640,7 @@ ion-icon {
   -ms-grid-row: 2;
   -ms-grid-row-span: 1;
   grid-row: 2/3;
+  position: relative;
 }
 
 .polygon-wrapper .polygon-editor .attribute-container #attributeInput {
@@ -1625,6 +1654,72 @@ ion-icon {
   background: none;
   padding: 0 5px;
   height: 40px;
+}
+
+.polygon-wrapper .polygon-editor .attribute-container .suggestions-list {
+  position: absolute;
+  height: auto;
+  max-height: 300px;
+  overflow: hidden;
+  overflow-y: auto;
+  width: 100%;
+  top: 50px;
+  z-index: 1;
+  display: none;
+}
+
+.polygon-wrapper .polygon-editor .attribute-container .suggestions-list::-webkit-scrollbar {
+  background: #fff;
+  width: 10px;
+}
+
+.polygon-wrapper .polygon-editor .attribute-container .suggestions-list::-webkit-scrollbar-track {
+  border-radius: 8px;
+}
+
+.polygon-wrapper .polygon-editor .attribute-container .suggestions-list::-webkit-scrollbar-thumb {
+  background: #000;
+}
+
+.polygon-wrapper .polygon-editor .attribute-container .suggestions-list .attribute-suggestion {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: justify;
+      -ms-flex-pack: justify;
+          justify-content: space-between;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: row;
+          flex-direction: row;
+  color: #f1f1f1;
+  height: 35px;
+  width: 100%;
+  padding: 5px 15px;
+  font-weight: 600;
+  background: #001f3f;
+  -webkit-transition: .2s;
+  transition: .2s;
+}
+
+.polygon-wrapper .polygon-editor .attribute-container .suggestions-list .attribute-suggestion:hover {
+  cursor: pointer;
+  background: #020b90;
+}
+
+.polygon-wrapper .polygon-editor .attribute-container .suggestions-list .attribute-suggestion #text {
+  max-width: 80%;
+}
+
+.polygon-wrapper .polygon-editor .attribute-container .suggestions-list .attribute-suggestion #count {
+  max-width: 20%;
+}
+
+.polygon-wrapper .polygon-editor .attribute-container .show {
+  display: block;
 }
 
 .polygon-wrapper .polygon-editor .attribute-container .attributes-list {
@@ -1679,6 +1774,7 @@ ion-icon {
   display: grid;
   -ms-grid-rows: 10% 90%;
       grid-template-rows: 10% 90%;
+  position: relative;
 }
 
 .polygon-wrapper .polygon-editor .text-container .text-title {
@@ -1690,8 +1786,23 @@ ion-icon {
   background-color: #fff;
   border-radius: 5px;
   color: #333;
-  margin: 16px 0px;
+  width: calc(100% - 40px);
+  height: calc(100% - 32px);
+  margin: 16px 0;
   outline: none;
+}
+
+.polygon-wrapper .polygon-editor .text-container #saveTextInput {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 30px;
+  height: 40px;
+  margin: 10px 0;
+}
+
+.polygon-wrapper .polygon-editor .text-container .saved {
+  border-color: #2ECC40;
 }
 
 #toggleEditor {

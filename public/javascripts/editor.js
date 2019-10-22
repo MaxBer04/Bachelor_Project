@@ -1,7 +1,10 @@
 import * as main from "./index.js";
+import * as poly from "./polygon.js";
 
 export class Editor {
   constructor() {
+    this._attributeJSON;
+    this._fetched = false;
   }
   
   isOpen() {
@@ -71,6 +74,60 @@ export class Editor {
     this.disableTextField();
   }
 
+  async autocompleteAttributes(inputText) {
+    try {
+      if(!this._fetched || inputText.length === 1) {
+        const res = await fetch("/main/getAttributes");
+        this._attributeJSON = await res.json()
+        this._fetched = true;
+      }
+      const attributeArr = [];
+      for(let i = 0; i < this._attributeJSON.length; i++) {
+        attributeArr.push(this._attributeJSON[i].text);
+      }
+
+      const attributesAndCounts = Object.values(attributeArr.reduce( (r,s) => {
+        (!r[s]) ? r[s] = {name: s, count: 1} : r[s]['count'] += 1;
+        return r;
+      }, {} ));
+
+      //const uniqueAttributes = [...(new Set(attributeArr))];
+      let matches = attributesAndCounts.filter(attribute => {
+        const regex = new RegExp(`^${inputText}`, 'gi');
+        return attribute.name.match(regex);
+      });
+      matches.sort((a,b) => b.count - a.count);
+      if(inputText.length === 0) matches = [];
+
+      this.createSuggestions(matches);
+    } catch(error) {console.log(error);}
+  }
+
+  createSuggestions(matches) {
+    const suggestionList = document.getElementsByClassName("suggestions-list")[0];
+    this.clearAllChilds(suggestionList);
+    matches.forEach((match) => {
+      const container = document.createElement("div");
+      container.classList.add("attribute-suggestion");
+      const text = document.createElement("span");
+      text.id = "text";
+      text.innerHTML = match.name;
+      const count = document.createElement("span");
+      count.id = "count";
+      count.innerHTML = match.count;
+      container.appendChild(text);
+      container.appendChild(count);
+      const editor = this;
+      container.addEventListener("click", (evt) => {
+        suggestionList.classList.remove("show");
+        editor.addAndDisplayAttribute(container.firstChild.innerHTML);
+        editor.clearAllChilds(suggestionList);
+        main.boardStateHistory.copyBoardStateToHistory(main.boardState, true, editor.getCurrentlyFocusedPolygon());
+      });
+      suggestionList.appendChild(container);
+    });
+  }
+
   getCurrentlyFocusedPolygon() {
     if(this._optionList.childElementCount === 0 || this._emulatedSelectText.innerHTML == "Select a Polygon: ") return;
     let focusedPolygon;
@@ -82,11 +139,27 @@ export class Editor {
 
   initializeTextField() {
     const textField = document.getElementsByClassName("text-input")[0];
+    const saveTextField = document.getElementById("saveTextInput");
     const editor = this;
-    textField.addEventListener("input", function(evt){
-      const currentPolygon = editor.getCurrentlyFocusedPolygon();
-      if(currentPolygon) currentPolygon.text = this.value;
+    textField.addEventListener("keydown", function(evt){
+      if((evt.ctrlKey && (evt.key=="y" || evt.key == "Y")) || (evt.ctrlKey && (evt.key=="z" || evt.key=="Z"))) {
+        evt.preventDefault();
+      }
     }, false);
+    saveTextField.addEventListener("click", (evt) => {
+      const poly = editor.getCurrentlyFocusedPolygon();
+      if(poly) {
+        textField.classList.add("saved");
+        poly.text = textField.value;
+        main.boardStateHistory.copyBoardStateToHistory(main.boardState, true, editor.getCurrentlyFocusedPolygon());
+        setTimeout(() => {textField.classList.remove("saved")}, 2000);
+      }
+    }, false);
+  }
+
+  correctTextField() {
+    const poly = this.getCurrentlyFocusedPolygon();
+    if(poly) document.getElementsByClassName("text-input")[0].value = poly.text;
   }
 
   disableTextField() {
@@ -184,18 +257,21 @@ export class Editor {
     this.correctSelectedOption();
   }
 
+  removeSelectedOption() {
+    main.boardState.currentPolygonCollection.polygons.forEach((pol) => {
+      pol.selectedInEditor = false;
+    });
+    this.clearAttributesAndText();
+    this._emulatedSelectText.innerHTML = "Select a Polygon: ";
+    this._emulatedSelect.setAttribute("style", "background-color: #ffffff");
+    this._emulatedSelect.ID = "";
+    this.disableTextField();
+  }
 
   correctSelectedOption(polygon) {
     const currentFocusedPolygon = polygon || this.getCurrentlyFocusedPolygon();
     if(!currentFocusedPolygon || (currentFocusedPolygon && !currentFocusedPolygon.finished)) { // kein Ausgeähltes Polygon
-      main.boardState.currentPolygonCollection.polygons.forEach((pol) => {
-        pol.selectedInEditor = false;
-      });
-      this.clearAttributesAndText();
-      this._emulatedSelectText.innerHTML = "Select a Polygon: ";
-      this._emulatedSelect.setAttribute("style", "background-color: #ffffff");
-      this._emulatedSelect.ID = "";
-      this.disableTextField();
+      this.removeSelectedOption();
     }
     else {
       const editor4 = this;
@@ -254,6 +330,12 @@ export class Editor {
         break;
       }
     }
+  }
+
+  addAndDisplayAttribute(attributeText) {
+    const attribute = new poly.Attribute(attributeText);
+    if(this.addAttributeToFocusedPolygon(attribute)) this.displayAttribute(attribute);
+    document.getElementById("attributeInput").value= "";
   }
 
   addAttributeToFocusedPolygon(attribute) {

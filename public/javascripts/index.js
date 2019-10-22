@@ -60,12 +60,6 @@ function getTranslatedMousePosition(evt) {
   }
 }
 
-function getMousePosition(evt) {
-  let X = evt.offsetX || (evt.pageX - canvas.offsetLeft);
-  let Y = evt.offsetY || (evt.pageY - canvas.offsetTop);
-  return {X, Y};
-}
-
 function getHoveredPolygons(X, Y) {
   let currentPolygonCollection = boardState.currentPolygonCollection;
   let ctx = boardState.boardConfig.ctx;
@@ -74,17 +68,29 @@ function getHoveredPolygons(X, Y) {
     if(!currentPolygonCollection.polygons[k].finished) continue;
 
     const currentPolygon = currentPolygonCollection.polygons[k];
-    const {X: startX, Y: startY} = viewState.getTransformedPoint(currentPolygon.points[0]['X'], currentPolygon.points[0]['Y'])
-    ctx.beginPath();
-    let path = new Path2D();
-    path.moveTo(startX, startY);
-    for(let i=0; i<currentPolygon.points.length; i++){
-      const {X: pointX, Y: pointY} = viewState.getTransformedPoint(currentPolygon.points[i]['X'], currentPolygon.points[i]['Y'])
-      path.lineTo(pointX, pointY);
+    if(currentPolygon.shape !== "Circle"){
+      const {X: startX, Y: startY} = viewState.getTransformedPoint(currentPolygon.points[0]['X'], currentPolygon.points[0]['Y']);
+      ctx.beginPath();
+      let path = new Path2D();
+      path.moveTo(startX, startY);
+      for(let i=0; i<currentPolygon.points.length; i++){
+        const {X: pointX, Y: pointY} = viewState.getTransformedPoint(currentPolygon.points[i]['X'], currentPolygon.points[i]['Y'])
+        path.lineTo(pointX, pointY);
+      }
+      path.lineTo(startX, startY);
+      path.closePath();
+      if(ctx.isPointInPath(path, X, Y)) hoveredPolygons.addPolygon(currentPolygon);
+    } else {
+      console.clear();
+      const p1 = {X: currentPolygon.points[0].X, Y: currentPolygon.points[0].Y};
+      const p2 = {X: currentPolygon.points[1].X, Y: currentPolygon.points[1].Y};
+      const p3 = {X: (p1.X+(p2.X-p1.X)*0.5), Y: (p1.Y+(p2.Y-p1.Y)*0.5)};
+      const radius = Math.max(Math.abs(p2.X-p1.X), Math.abs(p2.Y-p1.Y))*0.5;
+      const distance = Math.sqrt((X-p3.X)*(X-p3.X) + (Y-p3.Y)*(Y-p3.Y));
+      console.log(radius);
+      console.log(distance);
+      if(distance <= radius) hoveredPolygons.addPolygon(currentPolygon);
     }
-    path.lineTo(startX, startY);
-    path.closePath();
-    if(ctx.isPointInPath(path, X, Y)) hoveredPolygons.addPolygon(currentPolygon);
   }
   return hoveredPolygons;
 }
@@ -157,6 +163,7 @@ function handlePoint(X, Y) {
 
   boardState.currentPolygon.addPoint({'X':X,'Y':Y});
   drawer.drawPolygon(boardState.currentPolygon, false);
+  console.log(boardState);
   boardStateHistory.copyBoardStateToHistory(boardState);
   return false;
 }
@@ -245,6 +252,29 @@ function finishTriangle() {
   boardStateHistory.copyBoardStateToHistory(boardState);
 }
 
+function startCircle(startX, startY) {
+  const circle = new poly.Polygon([{X: startX, Y: startY}], true, drawer.selectPolygonFillColor());
+  circle.shape = "Circle";
+  boardState.addNewCurrentPolygon(circle);
+}
+
+function drawDynamicCircle(newX, newY) {
+  const p2 = {X: newX, Y: newY};
+  if(boardState.currentPolygon.points.length === 1) {
+    boardState.currentPolygon.addPoints([p2]);
+  }
+  else {
+    boardState.currentPolygon.replacePoint(1, p2);
+  }
+  drawer.reDrawBoardState(boardState);
+}
+
+function finishCircle() {
+  drawer.reDrawBoardState(boardState);
+  editor.populateOptionList();
+  boardStateHistory.copyBoardStateToHistory(boardState);
+}
+
 export function newSelectedPolygon(polygon) {
   //remove old selected
   boardState.currentPolygonCollection.polygons.forEach((pol) => {
@@ -287,6 +317,7 @@ function createBoardStateFromServerResponse(serverResponse) {
   }
   const currentPolygon = new poly.Polygon();
   const backscaledPolygonCollection = poly.getBackscaledPolygons(polygonCollection, boardConfigDraw.shrinkage);
+  backscaledPolygonCollection.addPolygon(currentPolygon);
   return new boardStateConstructor.BoardState(undefined, backscaledPolygonCollection, currentPolygon);
 }
 
@@ -435,11 +466,13 @@ function addEventListeners() {
   }, false);
 
   // SAVE BOARD
-  document.querySelector("button#save").addEventListener("click", (evt) => {
+  if(!document.querySelector(".leftbar .disabled")){
+    document.querySelector("button#save").addEventListener("click", (evt) => {
     if(boardState.imageID){
       saveBoardStateToDB();
     }
   }, false);
+}
 
   document.getElementById("loadImageSet").addEventListener("click", async (evt) => {
     document.getElementsByClassName("loadScreen")[0].classList.add("cover");
@@ -485,11 +518,13 @@ function addEventListeners() {
     if(evt.ctrlKey && evt.key=="y" || evt.key == "Y") {
       boardState = boardStateHistory.redoBoardState(editor) || boardState;
       editor.populateOptionList();
+      editor.correctTextField();
       drawer.reDrawBoardState(boardState);
     }
     else if(evt.ctrlKey && evt.key=="z" || evt.key=="Z") {
       boardState = boardStateHistory.undoBoardState(editor) || boardState;
       editor.populateOptionList();
+      editor.correctTextField();
       drawer.reDrawBoardState(boardState);
     }
   }, false);
@@ -539,6 +574,10 @@ function addEventListeners() {
     drawDevice = "Triangle";
   }, false);
 
+  document.getElementById("circle").addEventListener("click", (evt) => {
+    drawDevice = "Circle";
+  }, false);
+
   document.getElementById("alertClose").addEventListener("click", function(evt){
     document.getElementsByClassName("alert-box")[0].classList.remove("showAndfadeOut");
   }, false);
@@ -547,11 +586,20 @@ function addEventListeners() {
     editor.toggle();
   }, false);
 
-  document.getElementById("attributeInput").addEventListener("keyup", function(evt){
+  const attributeInput = document.getElementById("attributeInput");
+  attributeInput.addEventListener("input", async (evt) => {
+    document.getElementsByClassName("suggestions-list")[0].classList.add("show");
+    await editor.autocompleteAttributes(attributeInput.value);
+  }, false);
+
+  attributeInput.addEventListener("onblur", (evt) => {
+    document.getElementsByClassName("suggestions-list")[0].classList.remove("show");
+    editor._fetched = false;
+  }, false);
+
+  attributeInput.addEventListener("keyup", function(evt){
     if(evt.keyCode === 13) { //enter
-      const attribute = new poly.Attribute(this.value);
-      if(editor.addAttributeToFocusedPolygon(attribute)) editor.displayAttribute(attribute);
-      this.value= "";
+      editor.addAndDisplayAttribute(this.value);
       boardStateHistory.copyBoardStateToHistory(boardState, true, editor.getCurrentlyFocusedPolygon());
     }
   }, false);
@@ -595,6 +643,8 @@ function addCanvasEventListeners() {
         startRectangle(startX, startY);
       } else if(drawDevice === "Triangle") {
         startTriangle(startX, startY);
+      } else if(drawDevice === "Circle") {
+        startCircle(startX, startY);
       }
     }
   }, false);
@@ -605,6 +655,7 @@ function addCanvasEventListeners() {
       const hoveredPolygons = getHoveredPolygons(X, Y);
       if(hoveredPolygons.polygons.length >= 1) editor.bringOptionInFocus(editor.getOptionDIVByPolygonID(hoveredPolygons.polygons[0].ID));
     }
+    let drawCircleAllowed = true;
     if (dragStart && evt.shiftKey && !currentlyDrawing){
 
       handleDrag(dragStart, X, Y);
@@ -614,14 +665,24 @@ function addCanvasEventListeners() {
       //const {X: imageX, Y: imageY} = viewState.getTransformedPoint(imageWidth*boardState.boardConfig.shrinkage, imageHeight*boardState.boardConfig.shrinkage);
       const imageXmax = imageWidth*boardState.boardConfig.shrinkage;
       const imageYmax = imageHeight*boardState.boardConfig.shrinkage;
-      X = (X > imageXmax) ? imageXmax : X;
-      Y = (Y > imageYmax) ? imageYmax : Y;
-      X = (X < 0) ? 0 : X;
-      Y = (Y < 0) ? 0 : Y;
+      if(drawDevice !== "Circle"){
+        X = (X > imageXmax) ? imageXmax : X;
+        Y = (Y > imageYmax) ? imageYmax : Y;
+        X = (X < 0) ? 0 : X;
+        Y = (Y < 0) ? 0 : Y;
+      } else {
+        const p1 = boardState.currentPolygon.points[0];
+        const p2 = {X, Y};
+        const radius = Math.max(Math.abs(p2.X-p1.X), Math.abs(p2.Y-p1.Y))*0.5;
+        const p3 = {X: p1.X+(p2.X-p1.X)*0.5, Y: p1.Y+(p2.Y-p1.Y)*0.5} // Circle middle point
+        drawCircleAllowed = ((p3.X+radius > imageXmax) || (p3.Y+radius > imageYmax) || (p3.X-radius < 0) || (p3.Y-radius < 0)) ? false : true;
+      }
       if(drawDevice === "Rectangle") {
         drawDynamicRectangle(X, Y);
       } else if(drawDevice === "Triangle") {
         drawDynamicTriangle(X, Y);
+      } else if(drawDevice === "Circle" && drawCircleAllowed) {
+        drawDynamicCircle(X, Y);
       }
     }
   },false);
@@ -633,6 +694,8 @@ function addCanvasEventListeners() {
         finishRectangle();
       } else if(drawDevice === "Triangle") {
         finishTriangle();
+      } else if(drawDevice === "Circle") {
+        finishCircle();
       }
 
     }
@@ -736,6 +799,7 @@ async function initialize(imagePath, imageID) {
     addCanvasEventListeners();
   }
   editor.populateOptionList();
+  editor.removeSelectedOption();
 }
 
 if(document.URL.startsWith(window.location.origin+"/main")) {

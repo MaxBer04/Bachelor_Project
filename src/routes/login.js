@@ -4,16 +4,22 @@ import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import DBHandler from '../databaseHandler.js';
 import base64 from 'base64url';
+import nodemailer from 'nodemailer';
 const url = require('url');
 const router = express.Router();
 const urlencodedParser = bodyParser.urlencoded({extended:false});
 router.use(isLoggedIn);
 
+const ADMIN_EMAIL = 'kbertram6@googlemail.com';
+const VERIFICATION_LINK_START = "http://localhost:3000";
 
 const dbHandler = new DBHandler();
 
 const privateKEY  = fs.readFileSync('./database/jwtRS256.key', 'utf8');
 const publicKEY  = fs.readFileSync('./database/jwtRS256.key.pub', 'utf8');
+
+const adminNumbers = [];
+const verifyNumbers = [];
 
 /*const signOptionsVerify = {
   issuer:  i,
@@ -51,6 +57,7 @@ router.post('/loginAttempt', async (req, res)  =>{
 
 router.post('/signUp', async (req, res, next) => {
   try {
+    console.log(req.body);
     const user = {
       email: req.body.email,
       password: base64.encode(req.body.password),
@@ -58,13 +65,93 @@ router.post('/signUp', async (req, res, next) => {
       lastName: req.body.last_name
     }
 
-    await dbHandler.addUser(user);
+    user.ID = await dbHandler.addUser(user);
+    if((req.body.adminCheck === "on")) sendAdminRequest(user);
+    else sendVerificationRequest(user);
     await logIn(user, res, true);
   } catch(error) {
     res.set("status", error);
     res.send();
   }
 });
+
+export function verifyUser(number) {
+  if(verifyNumbers.includes(number)) {
+    verifyNumbers.splice(verifyNumbers.indexOf(number), 1);
+    return true;
+  }
+  else return false;
+}
+
+export function verifyAdminRequestNumber(number) {
+  if(adminNumbers.includes(number)) {
+    adminNumbers.splice(adminNumbers.indexOf(number), 1);
+    return true;
+  }
+  else return false;
+}
+
+
+async function sendVerificationRequest(user) {
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: 'annotationapphhu@gmail.com',
+      pass: 'bachelorHHU20'
+    }
+  });
+  const randomNumber = Math.floor(Math.random() * 9000) + 1000;
+  verifyNumbers.push(randomNumber);
+  const mailOptions = {
+    from: 'annotationapphhu@gmail.com',
+    to: ADMIN_EMAIL,
+    subject: 'Verification HHU Annotation App',
+    text: `A user is trying to verify itsself!   
+Email: ${user.email}
+First name: ${user.firstName}
+Last name: ${user.lastName}  
+If you want to verify this person please click this link:   
+${VERIFICATION_LINK_START}/verify/${randomNumber}/${user.ID}`
+  }
+  transporter.sendMail(mailOptions, (err, info) => {
+    if (err) {
+      console.log(err);
+    } else {
+      console.log('Email sent: ' + info.response);
+    }
+  });
+}
+
+async function sendAdminRequest(user) {
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: 'annotationapphhu@gmail.com',
+      pass: 'bachelorHHU20'
+    }
+  });
+  const randomNumber = Math.floor(Math.random() * 9000) + 1000;
+  adminNumbers.push(randomNumber);
+  const mailOptions = {
+    from: 'annotationapphhu@gmail.com',
+    to: ADMIN_EMAIL,
+    subject: 'Admin Verification HHU Annotation App',
+    text: `A user is trying to become an Admin for the App!   
+Email: ${user.email}
+First name: ${user.firstName}
+Last name: ${user.lastName}  
+If you want to verify this person as an Admin, please click this link:   
+${VERIFICATION_LINK_START}/verifyAsAdmin/${randomNumber}/${user.ID}`
+  }
+  transporter.sendMail(mailOptions, (err, info) => {
+    if (err) {
+      console.log(err);
+    } else {
+      console.log('Email sent: ' + info.response);
+    }
+  });
+
+}
 
 async function logIn(user, res, newUser) {
   const {ID, isAdmin} = await getIDandAdmin(user.email);
@@ -77,7 +164,7 @@ async function logIn(user, res, newUser) {
     user.lastName = last_name;
   }
   setCookieSession(res, token, user, newUser);
-  res.redirect("/main");
+  res.redirect(`/main`);
 }
 
 

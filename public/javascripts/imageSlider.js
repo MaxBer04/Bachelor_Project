@@ -262,14 +262,16 @@ export class ImageSlider{
   }
 
   unlockImage(imageID) {
-    if(this.isImageInLoadedSet(imageID)) {
-      const targetImage = document.querySelector(`.image-container img[data-id='${imageID}']`);
-      let coverDIV = targetImage.nextElementSibling;
-      if(coverDIV) {
-        if(!coverDIV.classList.contains("lock")) coverDIV = coverDIV.nextElementSibling;
-        targetImage.parentNode.removeChild(coverDIV);
+    try {
+      if(this.isImageInLoadedSet(imageID)) {
+        const targetImage = document.querySelector(`.image-container img[data-id='${imageID}']`);
+        let coverDIV = targetImage.nextElementSibling;
+        if(coverDIV) {
+          if(!coverDIV.classList.contains("lock")) coverDIV = coverDIV.nextElementSibling;
+          targetImage.parentNode.removeChild(coverDIV);
+        }
       }
-    }
+    } catch(error) {console.log(error)}
   }
 
   lockImage(infos) {

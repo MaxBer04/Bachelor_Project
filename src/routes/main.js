@@ -15,10 +15,17 @@ const router = express.Router();
 const dbHandler = new DBHandler();
 
 router.get('/', verifyToken, async (req, res, next)  => {
+  const verified = await dbHandler.isVerified(req.cookies.ID);
   const user = await getCookieWithIsAdmin(req.cookies);
+  user.verified = verified;
   res.render('main', user, (err, html) => {
     res.send(html);
   });
+});
+
+router.get('/getAttributes', async (req, res) => {
+  const attributes = await dbHandler.getAllAttributesText();
+  res.json(attributes);
 });
 
 router.get("/loadAnnotations/:imageID", verifyToken, async (req, res) => {

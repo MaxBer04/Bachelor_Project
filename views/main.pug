@@ -99,6 +99,9 @@ block content
           button#triangle
             .container
               include ../public/images/leftbar/triangle.svg
+          button#circle
+            .container
+              include ../public/images/leftbar/oval.svg
         .controls
           button#undo
             .container
@@ -109,18 +112,26 @@ block content
           button#clear
             .container
               include ../public/images/leftbar/clear.svg
-          button#save
-            .container
-              include ../public/images/leftbar/save.svg
+          if(verified)
+            button#save
+              .container
+                include ../public/images/leftbar/save.svg
+          else
+            .disabled
+              button#save
+                  .container
+                    include ../public/images/leftbar/save.svg
   .polygon-wrapper.closeWrapper
     .polygon-editor
       .custom-select
       .attribute-container
         input(type="text" id="attributeInput" placeholder="Type here to add an attribute...")
+        .suggestions-list
         .attributes-list
       .text-container
         h3(class="text-title") TEXT
         textarea(class="text-input")
+        ion-icon(name="save" id="saveTextInput")
   #toggleEditor
     ion-icon(id="editorClosedIcon" name="arrow-dropup-circle")
     ion-icon(id="editorOpenIcon" class="hideIcon" name="arrow-dropdown-circle")

@@ -10,6 +10,12 @@ export default class DBHandler {
     });
   }
 
+  close() {
+    this._db.close((err) => {
+      if(err) throw err;
+      else console.log("Disconnected from Database...");
+    });
+  }
 
   // CHECK
   isValidUser(email, password) {
@@ -25,8 +31,18 @@ export default class DBHandler {
       });
     });
   }
-  isAdmin(ID) {
-    const SQL = `SELECT * FROM Admin WHERE userID=${ID};`;
+  isVerified(userID) {
+    const SQL = `SELECT * FROM User WHERE ID=${userID} AND verified=1;`;
+    return new Promise((resolve, reject) => {
+      this._db.get(SQL, [], (err, row) => {
+        if(err) reject();
+        else if(row) resolve(true);
+        else resolve(false);
+      });
+    });
+  }
+  isAdmin(userID) {
+    const SQL = `SELECT * FROM Admin WHERE userID=${userID};`;
     return new Promise((resolve, reject) => {
       this._db.get(SQL, [], (err, row) => {
         if(err) reject();
@@ -185,6 +201,15 @@ export default class DBHandler {
       });
     });
   }
+  getAllAttributesText() {
+    const SQL = `SELECT text FROM Attribut;`;
+    return new Promise((resolve, reject) => {
+      this._db.all(SQL, [], function(err, rows) {
+        if(err) reject(err)
+        else resolve(rows);
+      });
+    });
+  }
 
 
   // ADD / CREATE
@@ -222,9 +247,9 @@ export default class DBHandler {
       '${user.email}', '${user.password}', null, null, '${user.firstName}', '${user.lastName}');
       `;
       return new Promise((resolve, reject) => {
-        this._db.exec(SQL,(error) => {
+        this._db.run(SQL, [], function(error) {
           if(error) throw error;
-          resolve();
+          else resolve(this.lastID);
         });
       });
   }
@@ -258,6 +283,24 @@ export default class DBHandler {
   markImageSetAsAnnotated(userID, imageSetID) {
     const currentdate = new Date();
     const SQL = `INSERT INTO ImageSet_annotated_by_User(imageSetID, userID, timestamp) VALUES (${imageSetID}, ${userID}, '${currentdate.toISOString()}');`;
+    return new Promise((resolve, reject) => {
+      this._db.run(SQL, [], function(err) {
+        if(err) reject(err)
+        else resolve();
+      });
+    });
+  }
+  setUserAsAdmin(userID) {
+    const SQL = `INSERT INTO Admin(userID) VALUES(${userID});`;
+    return new Promise((resolve, reject) => {
+      this._db.run(SQL, [], function(err) {
+        if(err) reject(err)
+        else resolve();
+      });
+    });
+  }
+  setUserVerified(userID) {
+    const SQL = `UPDATE User SET verified = true WHERE ID = ${userID}`;
     return new Promise((resolve, reject) => {
       this._db.run(SQL, [], function(err) {
         if(err) reject(err)

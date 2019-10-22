@@ -101,7 +101,6 @@ export class BoardStateHistory {
     this._position += 1;
     const oldBoardState = this._history[this._position];
     if(oldBoardState.editorChange) this.redoEditorState(editor, oldBoardState.currentlyFocusedPolygon);
-
     return _.cloneDeep(this._history[this._position]);;
   }
 

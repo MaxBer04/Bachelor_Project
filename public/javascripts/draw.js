@@ -70,25 +70,39 @@ export class Drawer {
     this._ctx.fillRect(x-d/2,y-d/2,d,d);
   }
 
+  drawCircle(polygon) {
+    const p1 = polygon.points[0];
+    const p2 = polygon.points[1];
+    const span = Math.max(Math.abs(p2.X-p1.X), Math.abs(p2.Y-p1.Y));
+    this._ctx.arc(p1.X+(p2.X-p1.X)*0.5, p1.Y+(p2.Y-p1.Y)*0.5, span*0.5, 0, 2* Math.PI);
+  }
+
   drawPolygon(polygon, finished){
     this._ctx.lineWidth = this._ctx._defaultLineWidth;
 
     this._ctx.beginPath();
-    for(var i=0; i<polygon.points.length; i++){
-      let X = polygon.points[i]['X'];
-      let Y = polygon.points[i]['Y'];
-      if(i==0){
-        this._ctx.moveTo(X, Y);
-        this.drawPoint(X, Y);
-      } else {
-        this._ctx.lineTo(X, Y);
-        this.drawPoint(X, Y);
+    if(polygon.shape === "Circle") this.drawCircle(polygon);
+    else {
+      for(var i=0; i<polygon.points.length; i++){
+        let X = polygon.points[i]['X'];
+        let Y = polygon.points[i]['Y'];
+        if(i==0){
+          this._ctx.moveTo(X, Y);
+          this.drawPoint(X, Y);
+        } else {
+          this._ctx.lineTo(X, Y);
+          this.drawPoint(X, Y);
+        }
+      }
+    
+      if(finished) {
+        this.finishPolygon(polygon);
       }
     }
-  
-    if(finished) {
-      this.finishPolygon(polygon);
-    }
+    this._ctx.fillStyle = (polygon.fillColor) ? polygon.fillColor : this.selectPolygonFillColor(polygon);
+    this._ctx.fill();
+    this._ctx.strokeStyle = this._ctx._strokeStyleFinished;
+
     if(polygon.selectedInEditor) {
       this._ctx.shadowBlur = 10;
       this._ctx.shadowColor = "black";
@@ -137,9 +151,6 @@ export class Drawer {
   finishPolygon(polygon) {
     this._ctx.lineTo(polygon.points[0]['X'], polygon.points[0]['Y']);
     this._ctx.closePath();
-    this._ctx.fillStyle = (polygon.fillColor) ? polygon.fillColor : this.selectPolygonFillColor(polygon);
-    this._ctx.fill();
-    this._ctx.strokeStyle = this._ctx._strokeStyleFinished;
     polygon.finished = true;
   }
 
