@@ -4,16 +4,14 @@ export class ViewState {
     this._scaleFactor = scaleFactor;
 
     trackTransforms(boardConfig.ctx);
-
-    // Hier könnte man auch boardConfigImage nehmen, da beide gleich groß sind/sein sollen
-    this._X = this._boardConfig.canvas.width/2;
-    this._Y = this._boardConfig.canvas.height/2;
   }
 
   get scaleFactor() { return this._scaleFactor; }
   set scaleFactor(scaleFactor) { this._scaleFactor = scaleFactor; }
 
   zoom(delta, X, Y){
+    //this._boardConfig.ctx.save();
+    //this._boardConfig.ctx.transform(1/delta, 0, 0, 1/delta, 0, 0);
     this._boardConfig.ctx.translate(X, Y);
     var factor = Math.pow(this._scaleFactor,delta);
     this._boardConfig.ctx.scale(factor,factor);
@@ -63,12 +61,6 @@ function trackTransforms(ctx){
   ctx.scale = function(sx,sy){
     xform = xform.scaleNonUniform(sx,sy);
     return scale.call(ctx,sx,sy);
-  };
-
-  var rotate = ctx.rotate;
-  ctx.rotate = function(radians){
-    xform = xform.rotate(radians*180/Math.PI);
-    return rotate.call(ctx,radians);
   };
 
   var translate = ctx.translate;

@@ -77,7 +77,7 @@ export class Editor {
   async autocompleteAttributes(inputText) {
     try {
       if(!this._fetched || inputText.length === 1) {
-        const res = await fetch("/main/getAttributes");
+        const res = await fetch("/main/attributes/text");
         this._attributeJSON = await res.json()
         this._fetched = true;
       }
@@ -335,6 +335,7 @@ export class Editor {
   addAndDisplayAttribute(attributeText) {
     const attribute = new poly.Attribute(attributeText);
     if(this.addAttributeToFocusedPolygon(attribute)) this.displayAttribute(attribute);
+    console.log(this.getCurrentlyFocusedPolygon().attributes);
     document.getElementById("attributeInput").value= "";
   }
 
@@ -344,8 +345,10 @@ export class Editor {
       main.customAlert("Please select a Polygon first, to then add attributes to it!");
       return false;
     }
-    focusedPolygon.addAttribute(attribute);
-    return true;
+    if(!focusedPolygon.hasAttribute(attribute.content)) {
+      focusedPolygon.addAttribute(attribute);
+      return true;
+    } else return false;
   }
 
   displayAttribute(attribute) {
@@ -405,11 +408,16 @@ export class Editor {
     attributeText.addEventListener("keydown", function(evt) {
       if(evt.keyCode === 13) {
         evt.preventDefault();
-        attribute.content = attribute.preSaveContent;
-        attributeText.innerHTML = attribute.preSaveContent;
-        main.customAlert("Attribute changed!");
-        main.boardStateHistory.copyBoardStateToHistory(main.boardState, true, editor.getCurrentlyFocusedPolygon());
-        return;
+        const focusedPolygon = editor.getCurrentlyFocusedPolygon();
+        if(!focusedPolygon.hasAttribute(attribute.preSaveContent)) {
+          attribute.content = attribute.preSaveContent;
+          attributeText.innerHTML = attribute.preSaveContent;
+          main.customAlert("Attribute changed!");
+          main.boardStateHistory.copyBoardStateToHistory(main.boardState, true, editor.getCurrentlyFocusedPolygon());
+        } else {
+          attributeText.innerHTML = attribute.content;
+          main.customAlert("This Annotation has this attribute already!");
+        }
       }
     }, false);
 

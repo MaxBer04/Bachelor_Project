@@ -1,0 +1,87 @@
+
+form(class="uploadScreen" action="/main/uploadSet" method="post" encType="multipart/form-data")
+  .uploadImageContainer
+    .newImage.border
+      ion-icon(name="photos")
+      label(for="uploadForImageSet" ) Select Images
+        input(type="file" id="uploadForImageSet" name="images" accept="image/*"  multiple)
+  .uploadControls
+    input(type="text" placeholder="Title" id="imageSetTitle" name="title")
+    input(type="submit" id="submitImageSet" value="Upload")
+.alert-box
+  ion-icon(id="alertClose" name="close")
+  span#alertText
+.main
+  .navbar
+    a(id="logo" href="/")
+      include ../public/images/Logo_HHU.svg
+    .nav-upload(style="max-width: 50%; align-self: flex-start")
+    ion-icon(name="contact" id="navbarMenu")
+    .navbar-menu
+      .menuOption
+        a(href='#' id="shortcutsBtn") 
+          span Shortcuts
+          ion-icon(name="today")
+      hr
+      .menuOption
+        a(href='/settings' id="settingsBtn") 
+          span Settings
+          ion-icon(name="build")
+      hr
+      .menuOption
+        a(href='/logout' id="logoutBtn") 
+          span Logout
+          ion-icon(name="log-out")
+  .search-container
+    .search-settings
+      .search-setting#searchSettingsUser
+        span Users
+        .andorswitch
+          input(type="checkbox" name="andorswitch" class="andorswitch-checkbox" id="usersSwitch" checked)
+          label(class="andorswitch-label" for="usersSwitch")
+            span.andorswitch-inner
+            span.andorswitch-switch
+        input(type="text" id="searchByUsers" placeholder="Email, lastname, firstname...")
+        .search-results-suggestions#searchItemsUsersSuggestions
+        .search-results-items#searchItemsUsers
+      .search-setting#searchSettingsSets
+        span Sets
+        input(type="text" id="searchBySets" placeholder="Setname...")
+        .search-results-suggestions#searchItemsSetsSuggestions
+        .search-results-items#searchItemsSets
+      .search-setting#searchSettingsAttributes
+        span Attributes
+        .andorswitch
+          input(type="checkbox" name="andorswitch" class="andorswitch-checkbox" id="attributesSwitch" checked)
+          label(class="andorswitch-label" for="attributesSwitch")
+            span.andorswitch-inner
+            span.andorswitch-switch
+        input(type="text" id="searchByAttributes" placeholder="Attributes...")
+        .search-results-suggestions#searchItemsAttributesSuggestions
+        .search-results-items#searchItemsAttributes
+      .search-setting#searchSettingsSearch
+        button#searchSetsSubmit
+          #searchSetsSubmit-container
+            span Search
+            ion-icon(id="searchAnnotations-icon" name="search")
+    .search-results
+.cover-search
+  .display-container
+    .canvas-container
+      canvas#searchCanvas 
+    .select#userSelect
+      select
+        option Peter
+        option Hans
+        option Sarpei
+    .select#annotationSelect
+      select
+        option Anno 1
+        option Anno 2
+        option Anno 3
+    .attributes-list
+      .attribute TEST
+    .text
+
+
+script(type="module" src="https://unpkg.com/ionicons@4.5.10-0/dist/ionicons/ionicons.esm.js")

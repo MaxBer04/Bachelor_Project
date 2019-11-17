@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import createError from 'http-errors';
 import express from 'express';
 import bodyParser from 'body-parser';
@@ -9,6 +11,7 @@ import {verifyToken, clearCookies, verifyAdminRequestNumber, verifyUser} from '.
 
 import mainRouter from './routes/main.js';
 import loginRouter from './routes/login.js';
+import searchSetsRouter from './routes/searchSets.js';
 
 
 const app = express();
@@ -30,7 +33,7 @@ app.use(function (req, res, next) {
   var cookie = req.cookies.cookieName;
   if (cookie === undefined)
   {
-    // no: set a new cookie
+    // set a new cookie
     var randomNumber=Math.random().toString();
     randomNumber=randomNumber.substring(2,randomNumber.length);
     res.cookie('cookieName',randomNumber, { maxAge: 9000000, httpOnly: true });
@@ -42,6 +45,7 @@ app.use('/uploads', express.static(path.join(__dirname, '/../uploads')));
 app.use(express.static(path.join(__dirname, '../public')));
 
 app.use('/main', mainRouter);
+app.use('/main/search', searchSetsRouter);
 app.use('/login', loginRouter);
 
 
@@ -65,16 +69,16 @@ app.get('/verify/:number/:userID', async (req, res) => {
   if(verifyUser(Number(req.params.number))) {
     const dbHandler = new DBHandler();
     await dbHandler.setUserVerified(req.params.userID);
-    dbHandler.close()
+    dbHandler.close();
     res.status(200).send();
   }
   else res.status(500).send();
 });
 
 app.get('/logout', verifyToken, (req,res) => {
-  unlockImagesByUserID(req.cookies.ID);
+  unlockImagesByUserID(req.user.ID);
   clearCookies(res);
-  res.redirect('http://localhost:3000/login');
+  res.redirect(`${req.protocol}://${req.hostname}:3000/login`);
 })
 
 // catch 404 and forward to error handler 
@@ -111,7 +115,6 @@ function unlockImagesByUserID(userID) {
     const imageID = imageIDs[i];
     io.emit('confirmedUnlock', {imageID});
   }
-  console.clear();
   console.log("LOCKLIST: ");
   console.log(lockList);
 }

@@ -85,6 +85,14 @@ export class Polygon {
     this._attributeList.push(attribute);
   }
 
+  hasAttribute(attributeText) {
+    for(let i = 0; i < this._attributeList.length; i++) {
+      const result = this._attributeList[i].content.localeCompare(attributeText) === 0 ? true : false;
+      if(result) return true;
+    };
+    return false;
+  }
+
   removeAttribute(ID) {
     for(let i = 0; i < this._attributeList.length; i++) {
       if(this._attributeList[i].ID === ID) {

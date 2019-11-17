@@ -117,6 +117,7 @@ function signUpToLoginSwitch() {
   loginForm.removeChild(loginForm.childNodes[3]);
   loginForm.removeChild(loginForm.childNodes[3]);
   loginForm.removeChild(loginForm.childNodes[3]);
+  loginForm.removeChild(loginForm.childNodes[3]);
 }
 
 function loginToSignUpSwitch() {

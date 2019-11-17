@@ -1,23 +1,32 @@
 {
   "name": "myapp",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.9.0",
+  "main": "./src/app.js",
+  "bin": "./dist/bin/my-bin.js",
+  "pkg": {
+    "assets": [
+      "public/**/*",
+      "views/*",
+      "uploads/*"
+    ]
+  },
   "scripts": {
-    "start": "node ./src/bin/www",
     "babel-node": "babel-node",
-    "start2": "nodemon --exec npm run babel-node -- ./src/app.js",
-    "server": "babel-node ./src/bin/www",
-    "server:prod": "node ./dist/bin/www",
+    "start": "npm run babel-node -- ./dist/app.js",
+    "server": "babel-node ./src/app.js",
+    "server:prod": "node ./dist/app.js",
     "dev": "NODE_ENV=development npm-run-all server",
     "clean": "rimraf dist",
     "build": "babel ./src --out-dir dist",
-    "prod": "NODE_ENV=production npm-run-all clean build server:prod",
+    "prod": "NODE_ENV=production npm-run-all clean build",
     "watch": "nodemon"
   },
   "dependencies": {
+    "atob": "^2.1.2",
     "base64url": "^3.0.1",
     "body-parser": "^1.19.0",
     "cookie-parser": "~1.4.4",
+    "core-js": "^3.4.1",
     "debug": "~2.6.9",
     "express": "~4.16.1",
     "http-errors": "~1.6.3",
@@ -28,13 +37,17 @@
     "npm-run-all": "^4.1.5",
     "pug": "2.0.0-beta11",
     "socket.io": "^2.3.0",
-    "sqlite3": "^4.1.0"
+    "sqlite3": "^4.1.0",
+    "utf8": "^3.0.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.6.0",
     "@babel/core": "^7.6.0",
     "@babel/node": "^7.6.1",
     "@babel/preset-env": "^7.6.0",
+    "babel-core": "^6.26.3",
+    "babel-loader": "^8.0.6",
+    "babel-polyfill": "^6.26.0",
     "nodemon": "^1.19.2"
   }
 }

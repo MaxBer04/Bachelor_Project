@@ -75,6 +75,9 @@ export class Drawer {
     const p2 = polygon.points[1];
     const span = Math.max(Math.abs(p2.X-p1.X), Math.abs(p2.Y-p1.Y));
     this._ctx.arc(p1.X+(p2.X-p1.X)*0.5, p1.Y+(p2.Y-p1.Y)*0.5, span*0.5, 0, 2* Math.PI);
+    this._ctx.fillStyle = (polygon.fillColor) ? polygon.fillColor : this.selectPolygonFillColor(polygon);
+    this._ctx.fill();
+    this._ctx.strokeStyle = this._ctx._strokeStyleFinished;
   }
 
   drawPolygon(polygon, finished){
@@ -99,9 +102,6 @@ export class Drawer {
         this.finishPolygon(polygon);
       }
     }
-    this._ctx.fillStyle = (polygon.fillColor) ? polygon.fillColor : this.selectPolygonFillColor(polygon);
-    this._ctx.fill();
-    this._ctx.strokeStyle = this._ctx._strokeStyleFinished;
 
     if(polygon.selectedInEditor) {
       this._ctx.shadowBlur = 10;
@@ -111,6 +111,7 @@ export class Drawer {
       this._ctx.shadowColor = "";
       return;
     }
+    //this._ctx.restore();
     this._ctx.stroke();
   }
   
@@ -150,6 +151,9 @@ export class Drawer {
 
   finishPolygon(polygon) {
     this._ctx.lineTo(polygon.points[0]['X'], polygon.points[0]['Y']);
+    this._ctx.fillStyle = (polygon.fillColor) ? polygon.fillColor : this.selectPolygonFillColor(polygon);
+    this._ctx.fill();
+    this._ctx.strokeStyle = this._ctx._strokeStyleFinished;
     this._ctx.closePath();
     polygon.finished = true;
   }

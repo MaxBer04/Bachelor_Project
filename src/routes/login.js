@@ -19,15 +19,7 @@ const privateKEY  = fs.readFileSync('./database/jwtRS256.key', 'utf8');
 const publicKEY  = fs.readFileSync('./database/jwtRS256.key.pub', 'utf8');
 
 const adminNumbers = [];
-const verifyNumbers = [];
-
-/*const signOptionsVerify = {
-  issuer:  i,
-  subject:  s,
-  audience:  a,
-  expiresIn:  "12h",
-  algorithm:  ["RS256"]
-}*/
+const verifyNumbers = []
 
 router.get('/', (req, res, next)  =>{
   res.render('login');
@@ -44,8 +36,7 @@ router.post('/loginAttempt', async (req, res)  =>{
     if(status === 'success') {
       await logIn(user, res, false);
     } else {
-      res.set("status", status);
-      res.send();
+      res.redirect('/login');
     }
   } catch(error) {
     console.error(error);
@@ -57,7 +48,6 @@ router.post('/loginAttempt', async (req, res)  =>{
 
 router.post('/signUp', async (req, res, next) => {
   try {
-    console.log(req.body);
     const user = {
       email: req.body.email,
       password: base64.encode(req.body.password),
@@ -70,8 +60,7 @@ router.post('/signUp', async (req, res, next) => {
     else sendVerificationRequest(user);
     await logIn(user, res, true);
   } catch(error) {
-    res.set("status", error);
-    res.send();
+    res.redirect('/login');
   }
 });
 
@@ -115,7 +104,7 @@ ${VERIFICATION_LINK_START}/verify/${randomNumber}/${user.ID}`
   }
   transporter.sendMail(mailOptions, (err, info) => {
     if (err) {
-      console.log(err);
+      console.error(err);
     } else {
       console.log('Email sent: ' + info.response);
     }
@@ -145,7 +134,7 @@ ${VERIFICATION_LINK_START}/verifyAsAdmin/${randomNumber}/${user.ID}`
   }
   transporter.sendMail(mailOptions, (err, info) => {
     if (err) {
-      console.log(err);
+      console.error(err);
     } else {
       console.log('Email sent: ' + info.response);
     }
@@ -157,12 +146,12 @@ async function logIn(user, res, newUser) {
   const {ID, isAdmin} = await getIDandAdmin(user.email);
   user.ID = ID;
   user.isAdmin = isAdmin;
-  const token = getToken(ID, isAdmin, {email: user.email, password: user.password});
   if(!user.first_name) {
     const {first_name, last_name} = await dbHandler.getFirstAndLastname(ID);
     user.firstName = first_name;
     user.lastName = last_name;
   }
+  const token = getToken(ID, isAdmin, {email: user.email, password: user.password, firstName: user.firstName, lastName: user.lastName});
   setCookieSession(res, token, user, newUser);
   res.redirect(`/main`);
 }
@@ -181,9 +170,10 @@ export async function isAdmin(req, res, next) {
 
 export function verifyToken(req, res, next) {
   const signOptions = {
-    issuer: 'Heinrich Heine',
+    issuer: 'Heinrich Heine Universität',
     subject: req.cookies.email,
     audience: ''+req.cookies.ID,
+    //expiresIn: "12h",
     algorithm: "RS256"
   };
   jwt.verify(req.cookies.token, publicKEY, signOptions, (err, decodedToken) => {
@@ -191,6 +181,13 @@ export function verifyToken(req, res, next) {
       console.log("LOOGED OUT BECAUSE OF JWT VERIFY ERROR");
       clearCookies(res);
       res.redirect("http://localhost:3000/login");
+    }
+    req.user = {
+      ID: decodedToken.aud,
+      isAdmin: decodedToken.isAdmin,
+      email: decodedToken.sub,
+      firstName: decodedToken.firstName,
+      lastName: decodedToken.lastName
     }
     next();
   });
@@ -202,7 +199,6 @@ export function clearCookies(res) {
   res.clearCookie("ID");
   res.clearCookie("firstName");
   res.clearCookie("lastName");
-  console.log("HIER");
 }
 
 function setCookieSession(res, token, user, newUser) {
@@ -231,11 +227,13 @@ function getIDandAdmin(email) {
 }
 
 function getToken(ID, isAdmin, user) {
-  const payload = {isAdmin};
+  const payload = {isAdmin, lastName: user.lastName, firstName: user.firstName};
+  console.log(payload);
   const signOptions = {
-    issuer: 'Heinrich Heine',
+    issuer: 'Heinrich Heine Universität',
     subject: user.email,
     audience: ''+ID,
+    //expiresIn: "12h",
     algorithm: "RS256"
   };
   return jwt.sign(payload, privateKEY, signOptions);

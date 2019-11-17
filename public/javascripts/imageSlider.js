@@ -29,7 +29,8 @@ export class ImageSlider{
   }
 
   closeLoad() {
-    document.getElementsByClassName("loadScreen")[0].classList.remove("cover");
+    if(document.getElementsByClassName("loadScreen")[0].classList.contains("cover"))document.getElementsByClassName("loadScreen")[0].classList.remove("cover");
+    if(document.getElementsByClassName("uploadScreenDecision")[0].classList.contains("cover"))document.getElementsByClassName("uploadScreenDecision")[0].classList.remove("cover");
   }
 
   clearUploadForm() {
@@ -51,7 +52,7 @@ export class ImageSlider{
     let ID;
     return new Promise((resolve, reject) => {
       const request = new XMLHttpRequest();
-      request.open('GET', '/main/loadSetPreviews', true);
+      request.open('GET', '/main/setPreviews', true);
       const loadedSetIDs = [];
       if(this._setsObj) {
         this._setsObj.sets.forEach((set => loadedSetIDs.push(set.ID)));
@@ -89,7 +90,6 @@ export class ImageSlider{
       const image = document.createElement("img");
       image.setAttribute("data-ID", images[i].ID);
       image.style.opacity = 0;
-
 
       
       containerDIV.appendChild(image);
@@ -192,7 +192,7 @@ export class ImageSlider{
         customAlert("Images uploading...");
         const formData = new FormData();
         const request = new XMLHttpRequest();
-        request.open('POST', '/main/uploadSet', true);
+        request.open('POST', '/main/sets', true);
         request.onreadystatechange = () => {
           if (request.readyState == 4 && request.status == 200) {
             customAlert("The image set has been succesfully uploaded!");
@@ -270,7 +270,7 @@ export class ImageSlider{
           if(!coverDIV.classList.contains("lock")) coverDIV = coverDIV.nextElementSibling;
           targetImage.parentNode.removeChild(coverDIV);
         }
-      }
+      } 
     } catch(error) {console.log(error)}
   }
 

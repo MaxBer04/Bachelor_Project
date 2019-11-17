@@ -1,6 +1,11 @@
 extends layout
 
 block content
+  .uploadScreenDecision
+    .uploadScreenDecision-buttons
+      button#fileUpload Upload images as Set
+      .folderUpload Upload multiple folders as Sets
+        input(id="folderUpload" type="file" name="folderUpload" webkitdirectory multiple) 
   form(class="uploadScreen" action="/main/uploadSet" method="post" encType="multipart/form-data")
     .uploadImageContainer
       .newImage.border
@@ -29,6 +34,10 @@ block content
         include ../public/images/Logo_HHU.svg
       if(isAdmin)
         .nav-upload
+          button#searchAnnotations
+            #searchAnnotations-container
+              span Search Annotations
+              ion-icon(id="searchAnnotations-icon" name="search")
           button#uploadImageSet
             #uploadImageSetContainer
               span Upload new Set
@@ -88,39 +97,38 @@ block content
       canvas(id="imageBoard") Your Browser does not support Canvases :(
       canvas(id="drawBoard" class="crosshair") 
     .leftbar
-      .buttons
-        .shapes
-          button(id="lines" class="active")
+      .shapes
+        button(id="lines" class="active")
+          .container
+            include ../public/images/leftbar/anchor-point.svg
+        button#rectangle
+          .container
+            include ../public/images/leftbar/square.svg
+        button#triangle
+          .container
+            include ../public/images/leftbar/triangle.svg
+        button#circle
+          .container
+            include ../public/images/leftbar/oval.svg
+      .controls
+        button#undo
+          .container
+            include ../public/images/leftbar/undo.svg
+        button#redo
+          .container
+            include ../public/images/leftbar/redo.svg
+        button#clear
+          .container
+            include ../public/images/leftbar/clear.svg
+        if(verified)
+          button#save
             .container
-              include ../public/images/leftbar/anchor-point.svg
-          button#rectangle
-            .container
-              include ../public/images/leftbar/square.svg
-          button#triangle
-            .container
-              include ../public/images/leftbar/triangle.svg
-          button#circle
-            .container
-              include ../public/images/leftbar/oval.svg
-        .controls
-          button#undo
-            .container
-              include ../public/images/leftbar/undo.svg
-          button#redo
-            .container
-              include ../public/images/leftbar/redo.svg
-          button#clear
-            .container
-              include ../public/images/leftbar/clear.svg
-          if(verified)
+              include ../public/images/leftbar/save.svg
+        else
+          .disabled
             button#save
-              .container
-                include ../public/images/leftbar/save.svg
-          else
-            .disabled
-              button#save
-                  .container
-                    include ../public/images/leftbar/save.svg
+                .container
+                  include ../public/images/leftbar/save.svg
   .polygon-wrapper.closeWrapper
     .polygon-editor
       .custom-select
@@ -135,4 +143,6 @@ block content
   #toggleEditor
     ion-icon(id="editorClosedIcon" name="arrow-dropup-circle")
     ion-icon(id="editorOpenIcon" class="hideIcon" name="arrow-dropdown-circle")
-  ion-icon(class="deletePolygon hideIconBySize" name="trash")
+  .deletePolygon.hideIconBySize
+    include ../public/images/trash.svg
+  //ion-icon(class="deletePolygon hideIconBySize" name="trash")

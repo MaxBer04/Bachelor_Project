@@ -6,6 +6,7 @@ import * as boardStateConstructor from "./boardState.js";
 import * as editorConstructor from "./editor.js";
 import * as login from "./logger.js";
 import * as imageSliderConstructor from './imageSlider.js';
+import * as SearchSetsConstructor from './searchSets.js';
 
 export let socket;
 let firstTime = true;
@@ -81,14 +82,11 @@ function getHoveredPolygons(X, Y) {
       path.closePath();
       if(ctx.isPointInPath(path, X, Y)) hoveredPolygons.addPolygon(currentPolygon);
     } else {
-      console.clear();
       const p1 = {X: currentPolygon.points[0].X, Y: currentPolygon.points[0].Y};
       const p2 = {X: currentPolygon.points[1].X, Y: currentPolygon.points[1].Y};
       const p3 = {X: (p1.X+(p2.X-p1.X)*0.5), Y: (p1.Y+(p2.Y-p1.Y)*0.5)};
       const radius = Math.max(Math.abs(p2.X-p1.X), Math.abs(p2.Y-p1.Y))*0.5;
       const distance = Math.sqrt((X-p3.X)*(X-p3.X) + (Y-p3.Y)*(Y-p3.Y));
-      console.log(radius);
-      console.log(distance);
       if(distance <= radius) hoveredPolygons.addPolygon(currentPolygon);
     }
   }
@@ -163,7 +161,6 @@ function handlePoint(X, Y) {
 
   boardState.currentPolygon.addPoint({'X':X,'Y':Y});
   drawer.drawPolygon(boardState.currentPolygon, false);
-  console.log(boardState);
   boardStateHistory.copyBoardStateToHistory(boardState);
   return false;
 }
@@ -195,6 +192,7 @@ function handleDrag(dragStart, X, Y) {
 }
 
 function startRectangle(startX, startY) {
+  boardState.removeCurrentPolygonIfUnfinished();
   const rectangle = new poly.Polygon([{X:startX, Y:startY}], true, drawer.selectPolygonFillColor());
   boardState.addNewCurrentPolygon(rectangle);
   drawer.reDrawBoardState(boardState);
@@ -225,6 +223,7 @@ function finishRectangle() {
 }
 
 function startTriangle(startX, startY) {
+  boardState.removeCurrentPolygonIfUnfinished();
   const triangle = new poly.Polygon([{X:startX, Y:startY}], true, drawer.selectPolygonFillColor());
   boardState.addNewCurrentPolygon(triangle);
   drawer.reDrawBoardState(boardState);
@@ -253,6 +252,7 @@ function finishTriangle() {
 }
 
 function startCircle(startX, startY) {
+  boardState.removeCurrentPolygonIfUnfinished();
   const circle = new poly.Polygon([{X: startX, Y: startY}], true, drawer.selectPolygonFillColor());
   circle.shape = "Circle";
   boardState.addNewCurrentPolygon(circle);
@@ -321,17 +321,17 @@ function createBoardStateFromServerResponse(serverResponse) {
   return new boardStateConstructor.BoardState(undefined, backscaledPolygonCollection, currentPolygon);
 }
 
-async function getBoardIfAnnotated(imageID) {
+export async function getBoardIfAnnotated(imageID, userID) {
   return new Promise((resolve, reject) => {
     let boardState = undefined;
     const request = new XMLHttpRequest();
-    request.open('GET', `/main/loadAnnotations/${imageID}`, true);
+    request.open('GET', `/main/annotations/${imageID}/${userID}`, true);
     request.onreadystatechange = () => {
       if(request.readyState === 4 && request.status === 200) {
         const response = JSON.parse(request.responseText);
         if(!(Object.keys(response).length === 0 && response.constructor === Object)) { // Not an empty object
           boardState = createBoardStateFromServerResponse(response);
-        } 
+        }
         resolve(boardState);
       }
     }
@@ -339,13 +339,17 @@ async function getBoardIfAnnotated(imageID) {
   });
 }
 
+
+function unlockOldImage() {
+  if(document.querySelector(".image-container.active")) { 
+    const oldImageID = document.querySelector(".image-container.active img").getAttribute("data-id");
+    socket.emit('unlock', oldImageID);
+  }
+}
 export async function loadNewImage(imageID, path) {
   if(!boardState.saved) {
     if(confirm("Your annotations are not saved, are you sure you want to continue?")) {
-      if(document.querySelector(".image-container.active")) { 
-        const oldImageID = document.querySelector(".image-container.active").firstChild.getAttribute("data-id");
-        socket.emit('unlock', oldImageID);
-      }
+      unlockOldImage();
       socket.emit('lock', imageID);
       const loadDIV = document.getElementsByClassName("waitForSave")[0];
       loadDIV.classList.add("display");
@@ -360,10 +364,7 @@ export async function loadNewImage(imageID, path) {
       return true;
     }
   } else {
-      if(document.querySelector(".image-container.active")) { 
-        const oldImageID = document.querySelector(".image-container.active").firstChild.getAttribute("data-id");
-        socket.emit('unlock', oldImageID);
-      }
+      unlockOldImage();
       socket.emit('lock', imageID);
       const loadDIV = document.getElementsByClassName("waitForSave")[0];
       loadDIV.classList.add("display");
@@ -382,18 +383,18 @@ export async function loadNewImage(imageID, path) {
 
 export async function loadSetIntoApp(imageSetID) {
   let lockedList;
-  await new Promise((resolve,reject) => {setTimeout(() => {resolve()}, 500)});
   if(!boardState.saved) {
     if(confirm("Your annotations are not saved, are you sure you want to continue?")) {
       socket.emit("getLockedList", null);
       socket.on('acceptLockedList', function(lockedListAns){
         lockedList = lockedListAns;
       });
+      unlockOldImage();
       boardState.imageID = undefined;
       clearCanvases();
       await initialize();
       const request = new XMLHttpRequest();
-      request.open('GET', `/main/loadSet/${imageSetID}`, true);
+      request.open('GET', `/main/sets/${imageSetID}`, true);
       request.onreadystatechange = () => {
         if(request.readyState === 4 && request.status === 200) {
           boardStateHistory.reset();
@@ -401,6 +402,7 @@ export async function loadSetIntoApp(imageSetID) {
           imageSlider.initialize();
           imageSlider.closeLoad();
           imageSlider.loadSetIntoSlider(JSON.parse(request.response), document);
+          document.getElementsByClassName("image-slider-images")[0].setAttribute("data-setID", imageSetID);
           boardState.imageSetID = imageSetID;
           imageSlider.lockImages(lockedList);
           imageSlider.addEventListeners();
@@ -413,11 +415,12 @@ export async function loadSetIntoApp(imageSetID) {
       socket.on('acceptLockedList', function(lockedListAns){
         lockedList = lockedListAns;
       });
+      unlockOldImage();
       boardState.imageID = undefined;
       clearCanvases();
       await initialize();
       const request = new XMLHttpRequest();
-      request.open('GET', `/main/loadSet/${imageSetID}`, true);
+      request.open('GET', `/main/sets/${imageSetID}`, true);
       request.onreadystatechange = () => {
         if(request.readyState === 4 && request.status === 200) {
           boardStateHistory.reset();
@@ -425,6 +428,7 @@ export async function loadSetIntoApp(imageSetID) {
           imageSlider.initialize();
           imageSlider.closeLoad();
           imageSlider.loadSetIntoSlider(JSON.parse(request.response), document);
+          document.getElementsByClassName("image-slider-images")[0].setAttribute("data-setID", imageSetID);
           boardState.imageSetID = imageSetID;
           imageSlider.lockImages(lockedList);
           imageSlider.addEventListeners();
@@ -434,45 +438,63 @@ export async function loadSetIntoApp(imageSetID) {
   }
 }
 
-function saveBoardStateToDB() {
-  if(boardState.imageID) {
-    const loadDIV = document.getElementsByClassName("waitForSave")[0];
-    loadDIV.classList.add("display");
-    const rescaledPolygons = poly.getRescaledPolygons(boardState.currentPolygonCollection, boardState.boardConfig.shrinkage);
-    const finishedPolygons = rescaledPolygons.polygons.filter(polygon => polygon.finished);
-    const request = new XMLHttpRequest();
-    request.open('POST', `/main/saveAnnotations/${boardState.imageSetID}/${boardState.imageID}`, true);
-    request.setRequestHeader("Content-Type", "application/json");
-    request.onreadystatechange = () => {
-      if(request.readyState === 4 && request.status === 200) {
-        boardState.save();
-        loadDIV.classList.remove("display");
-        document.querySelector("button#save svg").style.fill = "#2ECC40";
-        setTimeout(() => {document.querySelector("button#save svg").style.fill = "#000";}, 2000);
-      } else {
-        document.querySelector("button#save svg").style.fill = "#FF4136";
-        setTimeout(() => {document.querySelector("button#save svg").style.fill = "#000";}, 2000);
-      }
+function saveBoardStateToDB(imageID, imageSetID) {
+  const loadDIV = document.getElementsByClassName("waitForSave")[0];
+  loadDIV.classList.add("display");
+  const rescaledPolygons = poly.getRescaledPolygons(boardState.currentPolygonCollection, boardState.boardConfig.shrinkage);
+  const finishedPolygons = rescaledPolygons.polygons.filter(polygon => polygon.finished);
+  const request = new XMLHttpRequest();
+  request.open('POST', `/main/annotations/${imageSetID}/${imageID}`, true);
+  request.setRequestHeader("Content-Type", "application/json");
+  request.onreadystatechange = () => {
+    if(request.readyState === 4 && request.status === 200) {
+      boardState.save();
+      loadDIV.classList.remove("display");
+      document.querySelector("button#save svg").style.fill = "#2ECC40";
+      setTimeout(() => {document.querySelector("button#save svg").style.fill = "#000";}, 2000);
+    } else {
+      document.querySelector("button#save svg").style.fill = "#FF4136";
+      setTimeout(() => {document.querySelector("button#save svg").style.fill = "#000";}, 2000);
     }
-    request.send(JSON.stringify(finishedPolygons));
-    return;
+  }
+  request.send(JSON.stringify(finishedPolygons));
+  return;
+}
+
+function enableNavbarMenu() {
+  try {
+    document.getElementById("navbarMenu").addEventListener("click", (evt) => {
+      document.getElementsByClassName("navbar-menu")[0].classList.toggle("open");
+    }, false);
+  } catch(e) {}
+}
+
+function checkFileStructureForFolderUpload(files) {
+  for(let i = 0; i < files.length; i++) {
+    const pathCount = files[i].webkitRelativePath.split("/");
+    if(!files[i].type.startsWith("image")) {
+      alert("Upload cancelled, because one of the files was not an image! The file has the name: "+files[i].name);
+      return false;
+    } else if(pathCount.length > 3) {
+      alert("The Folder Structure is deeper than two levels, which is not allowed!");
+      return false;
+    }
+    return true;
   }
 }
 
 function addEventListeners() {
 
-  document.getElementById("navbarMenu").addEventListener("click", (evt) => {
-    document.getElementsByClassName("navbar-menu")[0].classList.toggle("open");
-  }, false);
+  enableNavbarMenu();
 
   // SAVE BOARD
   if(!document.querySelector(".leftbar .disabled")){
     document.querySelector("button#save").addEventListener("click", (evt) => {
-    if(boardState.imageID){
-      saveBoardStateToDB();
-    }
-  }, false);
-}
+      const imageID = Number(document.querySelector(".image-container.active img").getAttribute("data-id"));
+      const imageSetID = Number(document.getElementsByClassName("image-slider-images")[0].getAttribute("data-setID"));
+      saveBoardStateToDB(imageID, imageSetID);
+    }, false);
+  }
 
   document.getElementById("loadImageSet").addEventListener("click", async (evt) => {
     document.getElementsByClassName("loadScreen")[0].classList.add("cover");
@@ -480,9 +502,67 @@ function addEventListeners() {
   }, false);
   try {
     document.getElementById("uploadImageSet").addEventListener("click", (evt) => {
+      // Hier den Auswahl Bildschirm für die Optionen anzeigen
+      document.getElementsByClassName("uploadScreenDecision")[0].classList.add("cover");
+    }, false);
+    document.getElementById("fileUpload").addEventListener("click", (evt) => {
+      document.getElementsByClassName("uploadScreenDecision")[0].classList.remove("cover");
       document.getElementsByClassName("uploadScreen")[0].classList.add("cover");
     }, false);
-  } catch(error) {}
+    document.getElementById("folderUpload").addEventListener("change", (evt) => {
+      let files = evt.target.files;
+      if(checkFileStructureForFolderUpload(files)) {
+        // Darstellen / Hochladen
+        let request;
+        if(window.XMLHttpRequest) request = new XMLHttpRequest();
+        else request = new ActiveXObject("Microsoft.XMLHTTP");
+        const formData = new FormData();
+        request.open('POST', `/main/sets/multiple`, true);
+        request.onreadystatechange = () => {
+          if(request.readyState === 4 && request.status === 200) {
+            document.getElementsByClassName("uploadScreenDecision")[0].classList.remove("cover");
+          }
+        }
+        for(let i = 0; i < files.length; i++) {
+          formData.append("images",files[i], window.btoa(files[i].webkitRelativePath));
+        }
+        request.send(formData);
+      }
+    }, false);
+    document.getElementById("searchAnnotations").addEventListener("click", (evt) => {
+      if(!boardState.saved) {
+        if(confirm("Your annotations are not saved, are you sure you want to continue?")) {
+          let request;
+          if(window.XMLHttpRequest) request = new XMLHttpRequest();
+          else request = new ActiveXObject("Microsoft.XMLHTTP");
+          request.open('GET', `/main/search`, true);
+          request.onreadystatechange = () => {
+            if(request.readyState === 4 && request.status === 200) {
+              document.body.innerHTML = request.responseText;
+              enableNavbarMenu();
+              const searchSets = new SearchSetsConstructor.SearchSets(document);
+            }
+          }
+          request.send();
+        }
+      } else {
+        let request;
+          if(window.XMLHttpRequest) request = new XMLHttpRequest();
+          else request = new ActiveXObject("Microsoft.XMLHTTP");
+          request.open('GET', `/main/search`, true);
+          request.onreadystatechange = () => {
+            if(request.readyState === 4 && request.status === 200) {
+              document.body.innerHTML = request.responseText;
+              enableNavbarMenu();
+              const searchSets = new SearchSetsConstructor.SearchSets(document);
+            }
+          }
+          request.send();
+      }
+    }, false);
+  } catch(error) {
+    console.log(error);
+  }
 
   document.getElementById("uploadForImageSet").addEventListener("change", (evt) => {
     imageSlider.handleFileUpload(document.querySelector("#uploadForImageSet").files);
@@ -498,42 +578,56 @@ function addEventListeners() {
   });
 
   document.addEventListener("keydown", function(evt) {
-    if(evt.altKey) editor.expand();
-    if(evt.keyCode == 27) {
-      if(document.querySelector(".uploadScreen.cover")) {
-        imageSlider.closeUpload();
-        imageSlider.clearUploadForm();
-        return;
-      } else if(document.querySelector(".loadScreen.cover")) {
-        imageSlider.closeLoad();
-        return;
+    try {
+      const key = evt.which || evt.keyCode;
+      const attributeInput = document.getElementById("attributeInput");
+      const suggestionList = document.getElementsByClassName("suggestions-list")[0];
+      if(key === 13 && document.activeElement === attributeInput) { // Enter key
+        if(suggestionList.classList.contains("show")) suggestionList.classList.remove("show");
       }
-      editor.collapse();
-    }
-    if(evt.shiftKey) {
-      document.getElementById("drawBoard").classList.remove("crosshair");
-      document.getElementById("drawBoard").className = "shift-pressed";
-    }
+      if(evt.altKey) editor.expand();
+      if(evt.keyCode == 27) {
+        if(document.querySelector(".uploadScreen.cover")) {
+          imageSlider.closeUpload();
+          imageSlider.clearUploadForm();
+          return;
+        } else if(document.querySelector(".loadScreen.cover")) {
+          imageSlider.closeLoad();
+          return;
+        } else if(document.querySelector(".uploadScreenDecision.cover")){
+          imageSlider.closeLoad();
+          return;
+        }
+        editor.collapse();
+      }
+      if(evt.shiftKey) {
+        document.getElementById("drawBoard").classList.remove("crosshair");
+        document.getElementById("drawBoard").className = "shift-pressed";
+      }
 
-    if(evt.ctrlKey && evt.key=="y" || evt.key == "Y") {
-      boardState = boardStateHistory.redoBoardState(editor) || boardState;
-      editor.populateOptionList();
-      editor.correctTextField();
-      drawer.reDrawBoardState(boardState);
-    }
-    else if(evt.ctrlKey && evt.key=="z" || evt.key=="Z") {
-      boardState = boardStateHistory.undoBoardState(editor) || boardState;
-      editor.populateOptionList();
-      editor.correctTextField();
-      drawer.reDrawBoardState(boardState);
-    }
+      if(evt.ctrlKey && (evt.key =="y" || evt.key == "Y")) {
+        boardState = boardStateHistory.redoBoardState(editor) || boardState;
+        editor.populateOptionList();
+        editor.correctTextField();
+        drawer.reDrawBoardState(boardState);
+      }
+      else if(evt.ctrlKey && (evt.key=="z" || evt.key=="Z")) {
+        boardState = boardStateHistory.undoBoardState(editor) || boardState;
+        editor.populateOptionList();
+        editor.correctTextField();
+        drawer.reDrawBoardState(boardState);
+      }
+    } catch(e) {}
+    
   }, false);
 
   document.addEventListener("keyup", function(evt){
-    if(!evt.shiftKey) {
-      document.getElementById("drawBoard").classList.remove("shift-pressed");
-      document.getElementById("drawBoard").className = "crosshair";
-    }
+    try {
+      if(!evt.shiftKey) {
+        document.getElementById("drawBoard").classList.remove("shift-pressed");
+        document.getElementById("drawBoard").className = "crosshair";
+      }
+    } catch(e) {}
   }, false);
 
   const controls = Array.from(document.querySelectorAll(".shapes button"));
@@ -716,11 +810,11 @@ function addCanvasEventListeners() {
     if (delta) {
       let {X, Y} = getTranslatedMousePosition(evt)
       viewState.zoom(delta, X, Y);
-      drawer.scaleThicknessOnZoom(Math.pow(viewState.scaleFactor,delta));
+      //drawer.scaleThicknessOnZoom(Math.pow(viewState.scaleFactor,delta));
       viewState.zoomImage(delta, X, Y, boardConfigImage);
+      drawer.clearAndDrawImage(img, boardConfigImage, imageWidth, imageHeight); 
+      drawer.reDrawBoardState(boardState);
     };
-    drawer.clearAndDrawImage(img, boardConfigImage, imageWidth, imageHeight); 
-    drawer.reDrawBoardState(boardState);
   },false);
 
   boardState.boardConfig.canvas.addEventListener('mousewheel', function(evt){
@@ -729,11 +823,11 @@ function addCanvasEventListeners() {
       if (delta) {
         let {X, Y} = getTranslatedMousePosition(evt)
         viewState.zoom(delta, X, Y);
-        drawer.scaleThicknessOnZoom(Math.pow(viewState.scaleFactor,delta));
+        //drawer.scaleThicknessOnZoom(Math.pow(viewState.scaleFactor,delta));
         viewState.zoomImage(delta, X, Y, boardConfigImage);
+        drawer.clearAndDrawImage(img, boardConfigImage, imageWidth, imageHeight); 
+        drawer.reDrawBoardState(boardState);
       };
-      drawer.clearAndDrawImage(img, boardConfigImage, imageWidth, imageHeight); 
-      drawer.reDrawBoardState(boardState);
     }
   },false);
 }

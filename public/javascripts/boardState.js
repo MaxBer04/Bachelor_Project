@@ -58,11 +58,14 @@ export class BoardState {
     this._currentPolygonCollection.addPolygon(polygon);
     this._currentPolygon = polygon;
   }
-
-  revertAndRemoveCurrentPolygon() {
-    this._currentPolygon = this._currentPolygonCollection.polygons[this._currentPolygonCollection.polygons.length-2];
-    this._currentPolygonCollection.removePolygon(this._currentPolygonCollection.polygons.length-1);
+  removeCurrentPolygonIfUnfinished() {
+    if(!this._currentPolygon.finished) this._currentPolygonCollection.removePolygon(this._currentPolygon.ID);
   }
+
+  //revertAndRemoveCurrentPolygon() {
+  //  this._currentPolygon = this._currentPolygonCollection.polygons[this._currentPolygonCollection.polygons.length-2];
+  // this._currentPolygonCollection.removePolygon(this._currentPolygonCollection.polygons.length-1);
+  //}
 
   reset() {
     this._boardConfig.softreset();
@@ -179,7 +182,6 @@ export class BoardConfig {
   resizeCanvasToFit(img) {
     this._shrinkage = 1;
     const appContainer = this._document.getElementsByClassName("app-Container")[0];
-    const main = this._document.getElementsByClassName("main")[0];
     this._canvas.height = img.height;
     this._canvas.width = img.width;
     let yShrink = 0;
