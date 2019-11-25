@@ -1,5 +1,6 @@
 const sqlite = require('sqlite3').verbose();
 const utf8 = require('utf8');
+import bcrypt from 'bcrypt';
 const DATABASE_PATH = './database/database.db';
 
 
@@ -7,7 +8,6 @@ export default class DBHandler {
   constructor() {
     this._db = new sqlite.Database(DATABASE_PATH, sqlite.OPEN_READWRITE, (err) => {
       if(err) throw err;
-      console.log("Connected to Database...");
     });
   }
 
@@ -18,26 +18,18 @@ export default class DBHandler {
     });
   }
 
-
   // CHECK
-  isValidUser(email, password) {
-    const SQL = 'SELECT * FROM User WHERE passwordHash = ? AND email = ?;';
-    return new Promise((resolve, reject) => {
-      const statement = this._db.prepare(SQL);
-      statement.get([password, email], (err, row) => {
-        if(err) {
-          statement.finalize();
-          reject(err);
-        }
-        if(!row) {
-          statement.finalize();
-          resolve('failed');
-        } else {
-          statement.finalize();
-          resolve('success');
-        }
-      });
-    });
+  async isValidUser(email, password) {
+    try {
+      const passwordHash = await this.getPasswordHash(email);
+      if(bcrypt.compareSync(password, passwordHash)) {
+        return ('success');
+      } else {
+        return ('failed');
+      }
+    } catch (error) {
+      return (error);
+    }
   }
   isVerified(userID) {
     const SQL = 'SELECT * FROM User WHERE ID = ? AND verified = 1;'
@@ -60,7 +52,7 @@ export default class DBHandler {
     });
   }
   isAdmin(userID) {
-    const SQL = 'SELECT * FROM Admin WHERE userID = ?;'
+    const SQL = 'SELECT userID FROM Admin WHERE userID = ?;'
     return new Promise((resolve, reject) => {
       const statement= this._db.prepare(SQL);
       statement.get([userID], (err, row) => {
@@ -100,7 +92,6 @@ export default class DBHandler {
     });
   }
   isImageAnnotatedByUser(userID, imageID) {
-    //const SQL = `SELECT * FROM Image_annotated_by_User WHERE userID = ${userID} AND imageID = ${imageID};`;
     const SQL = 'SELECT * FROM Image_annotated_by_User WHERE userID = ? AND imageID = ?;';
     return new Promise((resolve, reject) => {
       const statement = this._db.prepare(SQL);
@@ -123,6 +114,26 @@ export default class DBHandler {
 
 
   // GET
+  getPasswordHash(email) {
+    const SQL = 'SELECT passwordHash FROM User WHERE email = ?;';
+    return new Promise((resolve, reject) => {
+      const statement = this._db.prepare(SQL);
+      statement.get([email], (err, row) => {
+        if(err) {
+          statement.finalize();
+          reject(err);
+        }
+        if(!row) {
+          statement.finalize();
+          resolve('failed');
+        } else {
+          statement.finalize();
+          resolve(row.passwordHash);
+        }
+      })
+    });
+  }
+
   async getSetsByUserAnnotations(userEmails, mode) {
     const resultSets = [];
     const userIDs = [];
@@ -178,6 +189,22 @@ export default class DBHandler {
       });
     });
   }
+
+  getContactEmails() {
+    const SQL = 'SELECT userID, contactMail FROM Admin;';
+    return new Promise((resolve, reject) => {
+      const statement = this._db.prepare(SQL);
+      statement.all([], (err,rows) => {
+        if(err) {
+          statement.finalize();
+          reject(err);
+        }
+        statement.finalize();
+        resolve(rows);
+      });
+    });
+  }
+
   getIDsFromEmails(emails) {
     let SQL = 'SELECT ID FROM User WHERE email IN (?#);';
     SQL = this.arraySearch(SQL, emails);
@@ -273,12 +300,16 @@ export default class DBHandler {
   }
 
   getAnnotatedImagesFromUsers(userIDs, setID, userMode) {
-    let SQL = 'SELECT ID, path FROM Image WHERE imageSetID = ? AND ID IN (SELECT imageID FROM Image_annotated_by_User WHERE userID  = ?)';
+    let SQL = 'SELECT ID, path FROM Image WHERE (imageSetID = ? AND ID IN (SELECT imageID FROM Image_annotated_by_User WHERE userID  = ?))';
     for(let i = 1; i < userIDs.length; i++) {
-      SQL += ' '+userMode+' ID IN (SELECT imageID FROM Image_annotated_by_User WHERE userID  = ?)'
+      SQL += ' '+userMode+' (imageSetID = ? AND ID IN (SELECT imageID FROM Image_annotated_by_User WHERE userID  = ?))';
     }
     SQL += ';';
-    let params = [setID].concat(userIDs);
+    let params = [];
+    for(let i = 0; i < userIDs.length; i++) {
+      params.push(setID);
+      params.push(userIDs[i]);
+    }
     return new Promise((resolve, reject) => {
       const statement = this._db.prepare(SQL);
       statement.all(params, function(err, rows) {
@@ -399,7 +430,7 @@ export default class DBHandler {
     SQL += ';';
     return new Promise((resolve, reject) => {
       const statement = this._db.prepare(SQL);
-      statement.all([IDs], function(err, rows) {
+      statement.all(IDs, function(err, rows) {
         if(err) {
           statement.finalize();
           reject(err);
@@ -588,7 +619,7 @@ export default class DBHandler {
     SQL = this.arraySearch(SQL, setIDs);
     return new Promise((resolve, reject) => {
       const statement = this._db.prepare(SQL);
-      statement.all([setIDs], function(err, rows) {
+      statement.all(setIDs, function(err, rows) {
         if(err) {
           statement.finalize();
           reject(err);
@@ -675,11 +706,12 @@ export default class DBHandler {
       });
     });
   }
-  addUser(user) {
+  async addUser(user) {
     const SQL = 'INSERT INTO User(email, passwordHash, ID, verified, first_name, last_name) VALUES (?, ?, null, null, ?, ?);';
+    const passwordHash =  await bcrypt.hash(user.password, 10);
     return new Promise((resolve, reject) => {
       const statement = this._db.prepare(SQL);
-      statement.run([user.email, user.password, user.firstName, user.lastName], function(error) {
+      statement.run([user.email, passwordHash, user.firstName, user.lastName], function(error) {
         if(error) {
           statement.finalize();
           reject(error);
@@ -912,6 +944,21 @@ export default class DBHandler {
 
 
   // UPDATE
+  updateAdminContactMail(userID, newAdminContactMail) {
+    const SQL = 'UPDATE Admin SET contactMail = ? WHERE userID = ?;';
+    return new Promise((resolve, reject) => {
+      const statement = this._db.prepare(SQL);
+      statement.run([newAdminContactMail, userID], function(err) {
+        if(err) {
+          statement.finalize();
+          reject(err);
+        }
+        statement.finalize();
+        resolve();
+      })
+    })
+  }
+
   updateAnnotationTimestampForImageSet(imageSetID, userID, currentDateISO) {
     const SQL = 'UPDATE ImageSet_annotated_by_User SET timestamp = ? WHERE imageSetID = ? AND userID = ?;';
     return new Promise((resolve, reject) => {

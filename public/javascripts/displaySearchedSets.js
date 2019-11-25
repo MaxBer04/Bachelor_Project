@@ -102,6 +102,16 @@ export class displaySearchedSets {
 
       const imagesContainer = document.createElement("div");
       imagesContainer.classList.add("content-container-images");
+      const imgObserver = new IntersectionObserver((entires, imgObserver) => {
+        entires.forEach(entry => {
+          if(!entry.isIntersecting) return
+          else {
+            const src = entry.target.getAttribute("data-src");
+            if(src) entry.target.src = src;
+            imgObserver.unobserve(entry.target);
+          }
+        })
+      }, {})
       for(let k = 0; k < imagesInWeekGroups[i].images.length; k++) {
         const imageContainer = document.createElement("div");
         imageContainer.classList.add("content-result-image");
@@ -110,7 +120,8 @@ export class displaySearchedSets {
           await this.showAnnotationsForImage(imagesInWeekGroups[i].images[k]);
         });
         const img = new Image();
-        img.src = imagesInWeekGroups[i].images[k].path;
+        img.setAttribute("data-src", imagesInWeekGroups[i].images[k].path);
+        imgObserver.observe(img);
         img.setAttribute("data-id", imagesInWeekGroups[i].images[k].ID);
         imageContainer.appendChild(img);
         imagesContainer.appendChild(imageContainer);
@@ -134,6 +145,16 @@ export class displaySearchedSets {
 
       const imagesContainer = document.createElement("div");
       imagesContainer.classList.add("content-container-images");
+      const imgObserver = new IntersectionObserver((entires, imgObserver) => {
+        entires.forEach(entry => {
+          if(!entry.isIntersecting) return
+          else {
+            const src = entry.target.getAttribute("data-src");
+            if(src) entry.target.src = src;
+            imgObserver.unobserve(entry.target);
+          }
+        })
+      }, {})
       for(let k = 0; k < setResults[i].annotatedImages.length; k++) {
         const imageContainer = document.createElement("div");
         imageContainer.classList.add("content-result-image");
@@ -142,7 +163,8 @@ export class displaySearchedSets {
           await this.showAnnotationsForImage(setResults[i].annotatedImages[k]);
         });
         const img = new Image();
-        img.src = setResults[i].annotatedImages[k].path;
+        img.setAttribute("data-src", setResults[i].annotatedImages[k].path);
+        imgObserver.observe(img);
         img.setAttribute("data-id", setResults[i].annotatedImages[k].ID);
         imageContainer.appendChild(img);
         imagesContainer.appendChild(imageContainer);

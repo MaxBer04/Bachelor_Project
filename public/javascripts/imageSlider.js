@@ -84,6 +84,17 @@ export class ImageSlider{
 
   loadSetIntoSlider(images, document) {
     this._isSetLoaded = true;
+    const imgObserver = new IntersectionObserver((entires, imgObserver) => {
+      entires.forEach(entry => {
+        if(!entry.isIntersecting) return
+        else {
+          const src = entry.target.getAttribute("data-src");
+          if(src) entry.target.src = src;
+          imgObserver.unobserve(entry.target);
+        }
+      })
+    }, {})
+    let counter = 0;
     for(let i = 0; i < images.length; i++) {
       const containerDIV = document.createElement("div");
       containerDIV.classList.add("image-container");
@@ -101,9 +112,13 @@ export class ImageSlider{
       this._imagesContainer.appendChild(containerDIV);
 
       image.addEventListener("load", function () {
+        counter++;
+        if(counter === images.length) console.timeEnd();
         image.style.opacity = 1;
       });
       image.src = images[i].path;
+      //image.setAttribute("data-src", images[i].path);
+      //imgObserver.observe(image);
     }
   }
 
@@ -127,9 +142,20 @@ export class ImageSlider{
       const folder = document.createElement("ion-icon");
       folder.setAttribute("name", "folder");
       folder.classList.add("imageSet-folder");
+      const imgObserver = new IntersectionObserver((entires, imgObserver) => {
+        entires.forEach(entry => {
+          if(!entry.isIntersecting) return
+          else {
+            const src = entry.target.getAttribute("data-src");
+            if(src) entry.target.src = src;
+            imgObserver.unobserve(entry.target);
+          }
+        })
+      }, {})
       for(let k = 0; k < setsObj.sets[i].images.length; k++) {
-        const image = document.createElement("img");
-        image.src = setsObj.sets[i].images[k].path;
+        const image = new Image();
+        image.setAttribute("data-src", setsObj.sets[i].images[k].path);
+        imgObserver.observe(image);
         image.style.left = (-5+(k+1)*10)+"px";
         image.style.transform = `rotate(${-15 + (15*k)}deg)`;
         setDIV.append(image);
@@ -282,7 +308,7 @@ export class ImageSlider{
       coverDIV.addEventListener("click", (evt) => {evt.stopPropagation();})
       const textDIV = document.createElement("div");
       textDIV.classList.add("lock-content");
-      textDIV.innerHTML = `Annotated by...\n ${infos.firstName.charAt(0)}.${infos.lastName}`;
+      textDIV.innerHTML = `Annotated by \n ${infos.firstName.charAt(0)}.${infos.lastName}`;
       coverDIV.appendChild(textDIV);
       targetContainer.appendChild(coverDIV);
     }

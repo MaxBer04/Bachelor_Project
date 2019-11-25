@@ -40,7 +40,9 @@ export class SearchSets {
       searchSetsObj.userMode = document.getElementById("usersSwitch").checked;
       searchSetsObj.attributesMode = document.getElementById("attributesSwitch").checked;
       const displaySetsObj = new displaySets.displaySearchedSets(document);
+      console.time();
       await displaySetsObj.displaySets(searchSetsObj);
+      console.timeEnd();
     }, false);
 
     userSearch.addEventListener("input", async (evt) => {
@@ -100,7 +102,6 @@ export class SearchSets {
       });
       matches.sort((a,b) => b.count - a.count);
       if(inputText.length === 0) matches = [];
-      console.log(matches);
 
       this.createAttributeSuggestions(matches);
     } catch(error) {console.error(error);}

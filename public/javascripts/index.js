@@ -35,7 +35,7 @@ export function customAlert(text) {
   const alertText = document.getElementById("alertText");
   alertText.innerHTML = text;
   alertBox.classList.add("showAndfadeOut");
-  setTimeout(function(){alertBox.classList.remove("showAndfadeOut");}, 3000);
+  setTimeout(function(){alertBox.classList.remove("showAndfadeOut");}, 5000);
 };
 
 function checkIfInPic(X, Y) {
@@ -385,11 +385,11 @@ export async function loadSetIntoApp(imageSetID) {
   let lockedList;
   if(!boardState.saved) {
     if(confirm("Your annotations are not saved, are you sure you want to continue?")) {
+      unlockOldImage();
       socket.emit("getLockedList", null);
-      socket.on('acceptLockedList', function(lockedListAns){
+      socket.on('acceptLockedList', async function(lockedListAns){
         lockedList = lockedListAns;
       });
-      unlockOldImage();
       boardState.imageID = undefined;
       clearCanvases();
       await initialize();
@@ -411,36 +411,45 @@ export async function loadSetIntoApp(imageSetID) {
       request.send();
     }
   } else {
-      socket.emit("getLockedList", null);
-      socket.on('acceptLockedList', function(lockedListAns){
-        lockedList = lockedListAns;
-      });
-      unlockOldImage();
-      boardState.imageID = undefined;
-      clearCanvases();
-      await initialize();
-      const request = new XMLHttpRequest();
-      request.open('GET', `/main/sets/${imageSetID}`, true);
-      request.onreadystatechange = () => {
-        if(request.readyState === 4 && request.status === 200) {
-          boardStateHistory.reset();
-          boardState = boardStateConstructor.initializeNewBoardState(boardConfigDraw);
-          imageSlider.initialize();
-          imageSlider.closeLoad();
-          imageSlider.loadSetIntoSlider(JSON.parse(request.response), document);
-          document.getElementsByClassName("image-slider-images")[0].setAttribute("data-setID", imageSetID);
-          boardState.imageSetID = imageSetID;
-          imageSlider.lockImages(lockedList);
-          imageSlider.addEventListeners();
-        }
+    console.time();
+    unlockOldImage();
+    socket.emit("getLockedList", null);
+    socket.on('acceptLockedList', async function(lockedListAns){
+      lockedList = lockedListAns;
+    });
+    boardState.imageID = undefined;
+    clearCanvases();
+    await initialize();
+    const request = new XMLHttpRequest();
+    request.open('GET', `/main/sets/${imageSetID}`, true);
+    request.onreadystatechange = () => {
+      if(request.readyState === 4 && request.status === 200) {
+        boardStateHistory.reset();
+        boardState = boardStateConstructor.initializeNewBoardState(boardConfigDraw);
+        imageSlider.initialize();
+        imageSlider.closeLoad();
+        imageSlider.loadSetIntoSlider(JSON.parse(request.response), document);
+        document.getElementsByClassName("image-slider-images")[0].setAttribute("data-setID", imageSetID);
+        boardState.imageSetID = imageSetID;
+        imageSlider.lockImages(lockedList);
+        imageSlider.addEventListeners();
       }
-      request.send();
+    }
+    request.send();
   }
 }
 
-function saveBoardStateToDB(imageID, imageSetID) {
+function showLoadScreen() {
   const loadDIV = document.getElementsByClassName("waitForSave")[0];
-  loadDIV.classList.add("display");
+  if(!loadDIV.classList.contains("display")) loadDIV.classList.add("display");
+}
+function closeLoadScreen() {
+  const loadDIV = document.getElementsByClassName("waitForSave")[0];
+  if(loadDIV.classList.contains("display")) loadDIV.classList.remove("display");
+}
+
+function saveBoardStateToDB(imageID, imageSetID) {
+  showLoadScreen();
   const rescaledPolygons = poly.getRescaledPolygons(boardState.currentPolygonCollection, boardState.boardConfig.shrinkage);
   const finishedPolygons = rescaledPolygons.polygons.filter(polygon => polygon.finished);
   const request = new XMLHttpRequest();
@@ -449,7 +458,7 @@ function saveBoardStateToDB(imageID, imageSetID) {
   request.onreadystatechange = () => {
     if(request.readyState === 4 && request.status === 200) {
       boardState.save();
-      loadDIV.classList.remove("display");
+      closeLoadScreen();
       document.querySelector("button#save svg").style.fill = "#2ECC40";
       setTimeout(() => {document.querySelector("button#save svg").style.fill = "#000";}, 2000);
     } else {
@@ -466,6 +475,25 @@ function enableNavbarMenu() {
     document.getElementById("navbarMenu").addEventListener("click", (evt) => {
       document.getElementsByClassName("navbar-menu")[0].classList.toggle("open");
     }, false);
+    document.getElementById("shortcutsBtn").addEventListener("click", (evt) => {
+      const shortcutsDisplay = document.getElementsByClassName("shortcutsDisplay")[0];
+      if(!shortcutsDisplay.classList.contains("cover")) shortcutsDisplay.classList.add("cover");
+    }, false);
+    document.getElementById("contactBtn").addEventListener("click", async (evt) => {
+      const contactMails = await (await fetch("/main/admins/contactEmails")).json();
+      const contactInner = document.getElementsByClassName("contactInner")[0];
+      while(contactInner.childNodes.length > 1) contactInner.removeChild(contactInner.firstChild);
+      for(let i = 0; i < contactMails.length; i++) {
+        const container = document.createElement("div");
+        container.classList.add("contactMailContainer");
+        const span = document.createElement("span");
+        span.innerHTML = contactMails[i].contactMail;
+        container.appendChild(span);
+        contactInner.prepend(container);
+      }
+      const contactDisplay = document.getElementsByClassName("contactDisplay")[0];
+      if(!contactDisplay.classList.contains("cover")) contactDisplay.classList.add("cover");
+    }, false);
   } catch(e) {}
 }
 
@@ -481,6 +509,49 @@ function checkFileStructureForFolderUpload(files) {
     }
     return true;
   }
+}
+
+function seperateFilesToSets(files) {
+  const setNamesAndImages = {};
+  for(let i = 0; i < files.length; i++) {
+    const pathParts = files[i].webkitRelativePath.split("/");
+    let folderName;
+    if(pathParts.length === 3) folderName = pathParts[1];
+    else folderName = pathParts[0];
+    const imgObj = files[i];
+    if(setNamesAndImages.hasOwnProperty(folderName)) {
+      setNamesAndImages[folderName].push(imgObj);
+    }
+    else {
+      setNamesAndImages[folderName] = [imgObj];
+    }
+  }
+  return setNamesAndImages;
+}
+
+function uploadSet(files, title, loadInfo) {
+  return new Promise((resolve, reject) => {
+    const formData = new FormData();
+    const request = new XMLHttpRequest();
+    request.open('POST', '/main/sets', true);
+    request.onreadystatechange = () => {
+      if (request.readyState == 4 && request.status == 200) {
+        resolve();
+      }
+    }
+    const startInfo = loadInfo.innerHTML+"";
+    request.upload.onprogress = function(e) {
+      if (e.lengthComputable) {
+        var percentage = Math.round(((e.loaded / e.total) * 100)*100)/100;
+        loadInfo.innerHTML = startInfo+"<br> Progress: "+percentage + "%";
+      }
+    };
+    for(let i = 0; i < files.length; i++) {
+      formData.append("images", files[i]);
+    }
+    formData.append('title', title);
+    request.send(formData);
+  });
 }
 
 function addEventListeners() {
@@ -501,6 +572,18 @@ function addEventListeners() {
     await imageSlider.loadSets();
   }, false);
   try {
+    document.getElementById("submitContactMail").addEventListener("click", async (evt) => {
+      const email = document.getElementById("adminContactMailInput");
+      if(!email.value === '') {
+        customAlert("Please enter a valid email!");
+        return;
+      }
+      await fetch('/main/admins/contactEmails/'+email.value, {method:'POST'});
+      customAlert("Your contact email has been updated!");
+    }, false);
+  }catch(error) {}
+
+  try {
     document.getElementById("uploadImageSet").addEventListener("click", (evt) => {
       // Hier den Auswahl Bildschirm für die Optionen anzeigen
       document.getElementsByClassName("uploadScreenDecision")[0].classList.add("cover");
@@ -509,24 +592,90 @@ function addEventListeners() {
       document.getElementsByClassName("uploadScreenDecision")[0].classList.remove("cover");
       document.getElementsByClassName("uploadScreen")[0].classList.add("cover");
     }, false);
-    document.getElementById("folderUpload").addEventListener("change", (evt) => {
+    //document.getElementById("folderUploadForm").onsubmit = function(evt) {
+     // evt.preventDefault();
+
+    //}
+
+    document.getElementById("folderUpload").addEventListener("change", async (evt) => {
+
       let files = evt.target.files;
       if(checkFileStructureForFolderUpload(files)) {
         // Darstellen / Hochladen
-        let request;
+        const setNamesAndImages = seperateFilesToSets(files);
+        imageSlider.closeLoad();
+        showLoadScreen();
+        const messageContainer = document.createElement("div");
+        messageContainer.classList.add("saveMessage");
+        const p = document.createElement("p");
+        messageContainer.appendChild(p);
+        const waitForSave = document.getElementsByClassName("waitForSave")[0];
+        waitForSave.prepend(messageContainer);
+        const setCount = Object.keys(setNamesAndImages).length;
+        let counter = 1;
+        for(const set in setNamesAndImages) {
+          p.innerHTML = `Overall progress: ${Math.round(((counter / setCount) * 100)*100)/100}%
+          <br> saving set to database: ${set}`;
+          await uploadSet(setNamesAndImages[set], set, p);
+          counter++;
+        }
+        document.getElementsByClassName("uploadScreenDecision")[0].classList.remove("cover");
+        waitForSave.removeChild(waitForSave.firstChild);
+        closeLoadScreen();
+        customAlert("Upload was successfull! Please wait a bit, before trying to access the new sets!")
+        /*let request;
         if(window.XMLHttpRequest) request = new XMLHttpRequest();
         else request = new ActiveXObject("Microsoft.XMLHTTP");
         const formData = new FormData();
-        request.open('POST', `/main/sets/multiple`, true);
+        request.open('POST', `/main/sets/multiple2`, true);
+        request.setRequestHeader("Content-Type", "form/multi-part");
         request.onreadystatechange = () => {
           if(request.readyState === 4 && request.status === 200) {
             document.getElementsByClassName("uploadScreenDecision")[0].classList.remove("cover");
+            customAlert("Upload was successfull! Please wait a bit, before trying to access the new sets!")
           }
         }
         for(let i = 0; i < files.length; i++) {
           formData.append("images",files[i], window.btoa(files[i].webkitRelativePath));
         }
-        request.send(formData);
+        imageSlider.closeLoad();
+        showLoadScreen();
+        const messageContainer = document.createElement("div");
+        messageContainer.classList.add("saveMessage");
+        const p = document.createElement("p");
+        p.innerHTML = 'Sending files to server...';
+        messageContainer.appendChild(p);
+        const waitForSave = document.getElementsByClassName("waitForSave")[0];
+        waitForSave.prepend(messageContainer);
+        let success = false;
+        while(!success) {
+          try {
+            socket.emit('startingUpload');
+            socket.on('uploadStateUpdate', function(message) {
+            p.innerHTML = message;
+              if(message === 'finished') {
+                waitForSave.removeChild(waitForSave.firstChild);
+                closeLoadScreen();
+              }
+            });
+            request.upload.onprogress = function(e) {
+              if (e.lengthComputable) {
+                var percentage = Math.round(((e.loaded / e.total) * 100)*100)/100;
+                p.innerHTML = "Saving images to /uploads: <br> Progress: "+percentage + "%";
+              }
+            };
+            
+            success = true;
+            console.log(Object.keys(formData));
+            while(Object.keys(formData).length === 0) {
+              console.log("Warten...")
+              await setTimeout(() => {}, 1000);
+            }
+            request.send(formData);
+          } catch(error) {
+            console.error(error)
+          }
+        }*/
       }
     }, false);
     document.getElementById("searchAnnotations").addEventListener("click", (evt) => {
@@ -561,7 +710,7 @@ function addEventListeners() {
       }
     }, false);
   } catch(error) {
-    console.log(error);
+    //console.error(error);
   }
 
   document.getElementById("uploadForImageSet").addEventListener("change", (evt) => {
@@ -597,6 +746,10 @@ function addEventListeners() {
         } else if(document.querySelector(".uploadScreenDecision.cover")){
           imageSlider.closeLoad();
           return;
+        } else if(document.querySelector(".shortcutsDisplay.cover")){
+          document.getElementsByClassName("shortcutsDisplay")[0].classList.remove("cover");
+        } else if(document.querySelector(".contactDisplay.cover")){
+          document.getElementsByClassName("contactDisplay")[0].classList.remove("cover");
         }
         editor.collapse();
       }
@@ -898,7 +1051,7 @@ async function initialize(imagePath, imageID) {
 
 if(document.URL.startsWith(window.location.origin+"/main")) {
   document.addEventListener("DOMContentLoaded",function(){
-    socket = io.connect();
+    socket = io.connect({transports: ['websocket'], upgrade: false});
     imageSlider = new imageSliderConstructor.ImageSlider(document);
   
     const cookie = document.cookie.split(';');

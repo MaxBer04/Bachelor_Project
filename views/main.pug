@@ -5,7 +5,7 @@ block content
     .uploadScreenDecision-buttons
       button#fileUpload Upload images as Set
       .folderUpload Upload multiple folders as Sets
-        input(id="folderUpload" type="file" name="folderUpload" webkitdirectory multiple) 
+        input(id="folderUpload" type="file" name="folderUpload" accept="image/*" webkitdirectory multiple) 
   form(class="uploadScreen" action="/main/uploadSet" method="post" encType="multipart/form-data")
     .uploadImageContainer
       .newImage.border
@@ -23,6 +23,36 @@ block content
           a(href="#" id="sortUploadDate") Upload Date
           a(href="#" id="sortTitle") Title
     .loadSetContainer
+  .shortcutsDisplay
+    .shortcutsInner
+      .shortcut
+        span STRG + Z
+        span UNDO 
+      .shortcut
+        span STRG + Y
+        span REDO
+      .shortcut
+        span STRG + left mouse click
+        span close the current open polygon
+      .shortcut
+        span Mousewheel
+        span Zoom
+      .shortcut
+        span Shift + left mouse button HOLD
+        span Panning
+      .shortcut
+        span ALT + hover with mouse over a polygon
+        span Display the hovered polygon inside the editor
+      .shortcut
+        span ESC
+        span Close any open window or the editor
+  .contactDisplay
+    .contactInner
+      if(isAdmin)
+        .contactMailInputContainer
+          input(type="email" placeholder="Enter your admin contact email" id="adminContactMailInput" name="contactMail")
+          input(type="submit" id="submitContactMail" value="Send")
+          
   .alert-box
     ion-icon(id="alertClose" name="close")
     span#alertText
@@ -55,9 +85,9 @@ block content
               ion-icon(name="today")
           hr
           .menuOption
-            a(href='/settings' id="settingsBtn") 
-              span Settings
-              ion-icon(name="build")
+            a(href='#' id="contactBtn") 
+              span Contact
+              ion-icon(name="mail")
           hr
           .menuOption
             a(href='/logout' id="logoutBtn") 
@@ -77,9 +107,9 @@ block content
               ion-icon(name="today")
           hr
           .menuOption
-            a(href='/settings' id="settingsBtn") 
-              span Settings
-              ion-icon(name="build")
+            a(href='#' id="contactBtn") 
+              span Contact
+              ion-icon(name="mail")
           hr
           .menuOption
             a(href='/logout' id="logoutBtn") 

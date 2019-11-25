@@ -3,7 +3,6 @@ import bodyParser from 'body-parser';
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import DBHandler from '../databaseHandler.js';
-import base64 from 'base64url';
 import nodemailer from 'nodemailer';
 const url = require('url');
 const router = express.Router();
@@ -32,7 +31,7 @@ router.post('/loginAttempt', async (req, res)  =>{
       password: req.body.password
     }
 
-    const status = await dbHandler.isValidUser(user.email, base64.encode(user.password));
+    const status = await dbHandler.isValidUser(user.email, user.password);
     if(status === 'success') {
       await logIn(user, res, false);
     } else {
@@ -50,7 +49,7 @@ router.post('/signUp', async (req, res, next) => {
   try {
     const user = {
       email: req.body.email,
-      password: base64.encode(req.body.password),
+      password: req.body.password,
       firstName: req.body.first_name,
       lastName: req.body.last_name
     }
@@ -60,6 +59,7 @@ router.post('/signUp', async (req, res, next) => {
     else sendVerificationRequest(user);
     await logIn(user, res, true);
   } catch(error) {
+    console.error(error);
     res.redirect('/login');
   }
 });
@@ -151,8 +151,8 @@ async function logIn(user, res, newUser) {
     user.firstName = first_name;
     user.lastName = last_name;
   }
-  const token = getToken(ID, isAdmin, {email: user.email, password: user.password, firstName: user.firstName, lastName: user.lastName});
-  setCookieSession(res, token, user, newUser);
+  const token = getToken(ID, isAdmin, user);
+  setCookieSession(res, token, newUser);
   res.redirect(`/main`);
 }
 
@@ -163,7 +163,7 @@ function isLoggedIn(req, res, next) {
 }
 
 export async function isAdmin(req, res, next) {
-  const isAdmin = await dbHandler.isAdmin(req.cookies.ID);
+  const isAdmin = await dbHandler.isAdmin(req.user.ID);
   if(isAdmin) next();
   else res.status(403).send();
 }
@@ -171,9 +171,7 @@ export async function isAdmin(req, res, next) {
 export function verifyToken(req, res, next) {
   const signOptions = {
     issuer: 'Heinrich Heine Universität',
-    subject: req.cookies.email,
-    audience: ''+req.cookies.ID,
-    //expiresIn: "12h",
+    expiresIn: "12h",
     algorithm: "RS256"
   };
   jwt.verify(req.cookies.token, publicKEY, signOptions, (err, decodedToken) => {
@@ -183,9 +181,9 @@ export function verifyToken(req, res, next) {
       res.redirect("http://localhost:3000/login");
     }
     req.user = {
-      ID: decodedToken.aud,
+      ID: decodedToken.ID,
       isAdmin: decodedToken.isAdmin,
-      email: decodedToken.sub,
+      email: decodedToken.email,
       firstName: decodedToken.firstName,
       lastName: decodedToken.lastName
     }
@@ -193,20 +191,35 @@ export function verifyToken(req, res, next) {
   });
 }
 
-export function clearCookies(res) {
-  res.clearCookie("token");
-  res.clearCookie("email");
-  res.clearCookie("ID");
-  res.clearCookie("firstName");
-  res.clearCookie("lastName");
+export function verifyTokenSocket(token) {
+  const signOptions = {
+    issuer: 'Heinrich Heine Universität',
+    expiresIn: "12h",
+    algorithm: "RS256"
+  };
+  return jwt.verify(token, publicKEY, signOptions, (err, decodedToken) => {
+    if(err !== null) {
+      console.log("LOOGED OUT BECAUSE OF JWT VERIFY ERROR");
+      clearCookies(res);
+      res.redirect("http://localhost:3000/login");
+    }
+    let user = {
+      ID: decodedToken.ID,
+      isAdmin: decodedToken.isAdmin,
+      email: decodedToken.email,
+      firstName: decodedToken.firstName,
+      lastName: decodedToken.lastName
+    }
+    return user;
+  });
 }
 
-function setCookieSession(res, token, user, newUser) {
+export function clearCookies(res) {
+  res.clearCookie("token");
+}
+
+function setCookieSession(res, token, newUser) {
   res.cookie("token", token);
-  res.cookie("email", user.email);
-  res.cookie("ID", user.ID);
-  res.cookie("firstName", user.firstName);
-  res.cookie("lastName", user.lastName);
   if(newUser) res.cookie("newUser", "true");
 }
 
@@ -227,13 +240,10 @@ function getIDandAdmin(email) {
 }
 
 function getToken(ID, isAdmin, user) {
-  const payload = {isAdmin, lastName: user.lastName, firstName: user.firstName};
-  console.log(payload);
+  const payload = {isAdmin, ID, email: user.email, lastName: user.lastName, firstName: user.firstName};
   const signOptions = {
     issuer: 'Heinrich Heine Universität',
-    subject: user.email,
-    audience: ''+ID,
-    //expiresIn: "12h",
+    expiresIn: "12h",
     algorithm: "RS256"
   };
   return jwt.sign(payload, privateKEY, signOptions);

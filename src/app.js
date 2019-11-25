@@ -6,27 +6,48 @@ import bodyParser from 'body-parser';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import logger from 'morgan';
+import fs from 'fs';
+import https from 'https';
+import cookieParser2 from 'cookie';
 import DBHandler from './databaseHandler.js';
-import {verifyToken, clearCookies, verifyAdminRequestNumber, verifyUser} from './routes/login.js';
+import {verifyToken, verifyTokenSocket, clearCookies, verifyAdminRequestNumber, verifyUser} from './routes/login.js';
 
 import mainRouter from './routes/main.js';
 import loginRouter from './routes/login.js';
 import searchSetsRouter from './routes/searchSets.js';
 
+//const privateSSLKey = fs.readFileSync(__dirname + '/SSL/server.key', 'utf8');
+//const certificate = fs.readFileSync(__dirname + '/SSL/server.crt', 'utf8');
+//const credentials = {key: privateSSLKey, cert: certificate, requestCert: false, rejectUnauthorized: false};
 
 const app = express();
+//const server = https.createServer(credentials, app);
 const server = require('http').createServer(app);
 const io = require('socket.io').listen(server);
 const connections = [];
 
+
+/*const copyNodeModules = require('copy-node-modules');
+const srcDir = '/home/max/Dropbox/COMP UNI/BachelorArbeit/Sketches/Bachelor_Project';
+const dstDir = '/media/max/Samsung_T5/Bachelor_Project';
+copyNodeModules(srcDir, dstDir, { devDependencies: true }, (err, results) => {
+  if (err) {
+    console.error(err);
+    return;
+  }
+  Object.keys(results).forEach(name => {
+    const version = results[name];
+    console.log(`Package name: ${name}, version: ${version}`);
+  });
+});*/
 
 // view engine setup
 app.set('views', path.join(__dirname, '../views'));
 app.set('view engine', 'pug');
 
 app.use(logger('dev'));
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true, limit: '50000000mb' }));
+app.use(bodyParser.json({limit: '50000000mb'}));
 app.use(cookieParser());
 app.use(function (req, res, next) {
   // check if client sent cookie
@@ -127,35 +148,32 @@ function isImageAlreadyLocked(imageID) {
   } else return false;
 }
 
+let uploaderSocket;
+
+export function getUploadSocket(message) {
+  return uploaderSocket;
+}
+
 io.sockets.on('connection', function(socket) {
-  /*let cookie = socket.request.headers.cookie;
-  let ID = cookie.slice(cookie.indexOf("ID=")+3, cookie.length);
-  ID = ID.slice(0, ID.indexOf(";"));
-  socket.join(`Room:${ID}`);
-  console.log(io.sockets.adapter.rooms);*/
 
   connections.push(socket);
   console.log('Connected: %s sockets connected...', connections.length);
 
   // Disconnect
   socket.on('disconnect', function(data) {
-    let cookie = socket.request.headers.cookie;
-    let ID = cookie.slice(cookie.indexOf("ID=")+3, cookie.length);
-    ID = ID.slice(0, ID.indexOf(";"));
-    unlockImagesByUserID(ID);
+    const cookie = cookieParser2.parse(socket.request.headers.cookie);
+    const user = verifyTokenSocket(cookie.token)
+    unlockImagesByUserID(user.ID);
     connections.splice(connections.indexOf(socket), 1);
     console.log('Disconnected: %s sockets connected...', connections.length);
   });
   socket.on('lock', function(imageID) {
     if(!isImageAlreadyLocked(imageID)) {
-      let cookie = socket.request.headers.cookie;
-      let firstName = cookie.slice(cookie.indexOf("firstName=")+10, cookie.length);
-      firstName = firstName.slice(0, firstName.indexOf(";"));
-      let lastName = cookie.slice(cookie.indexOf("lastName=")+9, cookie.length);
-      lastName = lastName.slice(0, lastName.indexOf(";"));
-      let ID = cookie.slice(cookie.indexOf("ID=")+3, cookie.length);
-      ID = ID.slice(0, ID.indexOf(";"));
-      lockList.push({imageID, firstName, lastName, ID});
+      const cookie = cookieParser2.parse(socket.request.headers.cookie);
+      const user = verifyTokenSocket(cookie.token)
+      const firstName = user.firstName;
+      const lastName = user.lastName;
+      lockList.push({imageID, firstName, lastName, ID: user.ID});
       socket.broadcast.emit('confirmedLock', {imageID, firstName, lastName});
     }
   });
@@ -167,6 +185,9 @@ io.sockets.on('connection', function(socket) {
   });
   socket.on('getLockedList', function() {
     socket.emit('acceptLockedList', lockList);
+  })
+  socket.on('startingUpload', function() {
+    uploaderSocket = this;
   })
 });
 

@@ -77,7 +77,7 @@ export class Editor {
   async autocompleteAttributes(inputText) {
     try {
       if(!this._fetched || inputText.length === 1) {
-        const res = await fetch("/main/attributes/text");
+        const res = await fetch("/main/attributes/text/"+inputText);
         this._attributeJSON = await res.json()
         this._fetched = true;
       }

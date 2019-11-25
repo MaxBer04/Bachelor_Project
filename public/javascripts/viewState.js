@@ -3,7 +3,7 @@ export class ViewState {
     this._boardConfig = boardConfig;
     this._scaleFactor = scaleFactor;
 
-    trackTransforms(boardConfig.ctx);
+    detectTransforms(boardConfig.ctx);
   }
 
   get scaleFactor() { return this._scaleFactor; }
@@ -38,7 +38,7 @@ export class ViewState {
 
 // Adds ctx.getTransform() - returns an SVGMatrix
 // Adds ctx.transformedPoint(x,y) - returns an SVGPoint
-function trackTransforms(ctx){
+function detectTransforms(ctx){
   var svg = document.createElementNS("http://www.w3.org/2000/svg",'svg');
   var xform = svg.createSVGMatrix();
   ctx.getTransform = function(){ return xform; };

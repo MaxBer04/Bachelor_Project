@@ -14,7 +14,8 @@ router.get('/confirmed', verifyToken, async (req, res) => {
   const dbHandler = new DBHandler();
   let searchResults3;
   
-  if(!req.query.users & !req.query.sets & !req.query.attributes) {
+
+  if(!req.query.users && !req.query.sets && !req.query.attributes) {
     searchResults3 = await searchAllAnnotatedSets(dbHandler);
   } else {
 
@@ -26,7 +27,7 @@ router.get('/confirmed', verifyToken, async (req, res) => {
   }
 
 
-  // Für die User View noch das Annotationsdatum für jedes Bild laden
+  
   const usersArray = Array.isArray(req.query.users) ? req.query.users : [req.query.users];
   if(usersArray.length === 1 && usersArray[0]) {
     const userID = await dbHandler.getIDByEmail(usersArray[0])
@@ -38,7 +39,7 @@ router.get('/confirmed', verifyToken, async (req, res) => {
   }
   
   res.json(searchResults3);
-  dbHandler.close();
+  //dbHandler.close();
 });
 
 async function searchAllAnnotatedSets(dbHandler) {
@@ -92,7 +93,7 @@ async function searchBySets(reqQuery, userSearchResults, dbHandler) {
     const userMode = reqQuery.userMode === 'true' ? 'AND' : 'OR';
     let userEmails = reqQuery.users;
     if(!Array.isArray(userEmails)) userEmails = [userEmails];
-    for(let i = 0; i < searchResults2.length; i++) {
+    for(let i = searchResults2.length - 1; i >= 0; i--) {
       // annotierte Bilder vom Set laden
       if(userEmails[0]) {
         // Es werden nur Annotationen der ausgewählten User gesucht
@@ -102,12 +103,15 @@ async function searchBySets(reqQuery, userSearchResults, dbHandler) {
           userIDs[index] = IDobj.ID;
         });
         searchResults2[i].annotatedImages = await dbHandler.getAnnotatedImagesFromUsers(userIDs, searchResults2[i].ID, userMode);
-        for(let l = 0; l < searchResults2[i].annotatedImages.length; l++) {
-          let image = searchResults2[i].annotatedImages[l];
-          image.annotations = [];
-          for(let k = 0; k < userIDs.length; k++) {
-            let annotations = await dbHandler.getAnnotationsFromImage(userIDs[k], image.ID);
-            if(await dbHandler.isImageAnnotatedByUser(userIDs[k], image.ID)) image.annotations = image.annotations.concat(annotations);
+        if(searchResults2[i].annotatedImages.length === 0) searchResults2.splice(i, 1);
+        else {
+          for(let l = 0; l < searchResults2[i].annotatedImages.length; l++) {
+            let image = searchResults2[i].annotatedImages[l];
+            image.annotations = [];
+            for(let k = 0; k < userIDs.length; k++) {
+              let annotations = await dbHandler.getAnnotationsFromImage(userIDs[k], image.ID);
+              if(await dbHandler.isImageAnnotatedByUser(userIDs[k], image.ID)) image.annotations = image.annotations.concat(annotations);
+            }
           }
         }
       } else {
@@ -118,7 +122,6 @@ async function searchBySets(reqQuery, userSearchResults, dbHandler) {
           image.annotations = await dbHandler.getAllAnnotationsFromImage(image.ID);
         }
       }
-      
     }
   }
   return searchResults2;

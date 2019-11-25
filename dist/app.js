@@ -1,10 +1,16 @@
 #!/usr/bin/env node
 "use strict";
 
+var _interopRequireWildcard = require("@babel/runtime/helpers/interopRequireWildcard");
+
+var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
+
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports["default"] = void 0;
+
+var _regenerator = _interopRequireDefault(require("@babel/runtime/regenerator"));
 
 var _httpErrors = _interopRequireDefault(require("http-errors"));
 
@@ -18,6 +24,12 @@ var _cookieParser = _interopRequireDefault(require("cookie-parser"));
 
 var _morgan = _interopRequireDefault(require("morgan"));
 
+var _fs = _interopRequireDefault(require("fs"));
+
+var _https = _interopRequireDefault(require("https"));
+
+var _cookie = _interopRequireDefault(require("cookie"));
+
 var _databaseHandler = _interopRequireDefault(require("./databaseHandler.js"));
 
 var _login = _interopRequireWildcard(require("./routes/login.js"));
@@ -26,23 +38,34 @@ var _main = _interopRequireDefault(require("./routes/main.js"));
 
 var _searchSets = _interopRequireDefault(require("./routes/searchSets.js"));
 
-function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function _getRequireWildcardCache() { return cache; }; return cache; }
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; if (obj != null) { var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } } newObj["default"] = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
-
-function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
-
-function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
-
-var app = (0, _express["default"])();
+//const privateSSLKey = fs.readFileSync(__dirname + '/SSL/server.key', 'utf8');
+//const certificate = fs.readFileSync(__dirname + '/SSL/server.crt', 'utf8');
+//const credentials = {key: privateSSLKey, cert: certificate, requestCert: false, rejectUnauthorized: false};
+var app = (0, _express["default"])(); //const server = https.createServer(credentials, app);
 
 var server = require('http').createServer(app);
 
 var io = require('socket.io').listen(server);
 
-var connections = []; // view engine setup
+var connections = [];
+
+var copyNodeModules = require('copy-node-modules');
+
+var srcDir = '/home/max/Dropbox/COMP UNI/BachelorArbeit/Sketches/Bachelor_Project';
+var dstDir = '/media/max/Samsung_T5/Bachelor_Project';
+copyNodeModules(srcDir, dstDir, {
+  devDependencies: true
+}, function (err, results) {
+  if (err) {
+    console.error(err);
+    return;
+  }
+
+  Object.keys(results).forEach(function (name) {
+    var version = results[name];
+    console.log("Package name: ".concat(name, ", version: ").concat(version));
+  });
+}); // view engine setup
 
 app.set('views', _path["default"].join(__dirname, '../views'));
 app.set('view engine', 'pug');
@@ -76,92 +99,72 @@ app.use('/login', _login["default"]);
 app.get('/', function (req, res) {
   res.redirect('/main');
 });
-app.get('/verifyAsAdmin/:number/:userID',
-/*#__PURE__*/
-function () {
-  var _ref = _asyncToGenerator(
-  /*#__PURE__*/
-  regeneratorRuntime.mark(function _callee(req, res) {
-    var dbHandler;
-    return regeneratorRuntime.wrap(function _callee$(_context) {
-      while (1) {
-        switch (_context.prev = _context.next) {
-          case 0:
-            if (!(0, _login.verifyAdminRequestNumber)(Number(req.params.number))) {
-              _context.next = 10;
-              break;
-            }
-
-            dbHandler = new _databaseHandler["default"]();
-            _context.next = 4;
-            return dbHandler.setUserVerified(req.params.userID);
-
-          case 4:
-            _context.next = 6;
-            return dbHandler.setUserAsAdmin(req.params.userID);
-
-          case 6:
-            dbHandler.close();
-            res.status(200).send();
-            _context.next = 11;
+app.get('/verifyAsAdmin/:number/:userID', function _callee(req, res) {
+  var dbHandler;
+  return _regenerator["default"].async(function _callee$(_context) {
+    while (1) {
+      switch (_context.prev = _context.next) {
+        case 0:
+          if (!(0, _login.verifyAdminRequestNumber)(Number(req.params.number))) {
+            _context.next = 10;
             break;
+          }
 
-          case 10:
-            res.status(500).send();
+          dbHandler = new _databaseHandler["default"]();
+          _context.next = 4;
+          return _regenerator["default"].awrap(dbHandler.setUserVerified(req.params.userID));
 
-          case 11:
-          case "end":
-            return _context.stop();
-        }
+        case 4:
+          _context.next = 6;
+          return _regenerator["default"].awrap(dbHandler.setUserAsAdmin(req.params.userID));
+
+        case 6:
+          dbHandler.close();
+          res.status(200).send();
+          _context.next = 11;
+          break;
+
+        case 10:
+          res.status(500).send();
+
+        case 11:
+        case "end":
+          return _context.stop();
       }
-    }, _callee);
-  }));
-
-  return function (_x, _x2) {
-    return _ref.apply(this, arguments);
-  };
-}());
-app.get('/verify/:number/:userID',
-/*#__PURE__*/
-function () {
-  var _ref2 = _asyncToGenerator(
-  /*#__PURE__*/
-  regeneratorRuntime.mark(function _callee2(req, res) {
-    var dbHandler;
-    return regeneratorRuntime.wrap(function _callee2$(_context2) {
-      while (1) {
-        switch (_context2.prev = _context2.next) {
-          case 0:
-            if (!(0, _login.verifyUser)(Number(req.params.number))) {
-              _context2.next = 8;
-              break;
-            }
-
-            dbHandler = new _databaseHandler["default"]();
-            _context2.next = 4;
-            return dbHandler.setUserVerified(req.params.userID);
-
-          case 4:
-            dbHandler.close();
-            res.status(200).send();
-            _context2.next = 9;
+    }
+  });
+});
+app.get('/verify/:number/:userID', function _callee2(req, res) {
+  var dbHandler;
+  return _regenerator["default"].async(function _callee2$(_context2) {
+    while (1) {
+      switch (_context2.prev = _context2.next) {
+        case 0:
+          if (!(0, _login.verifyUser)(Number(req.params.number))) {
+            _context2.next = 8;
             break;
+          }
 
-          case 8:
-            res.status(500).send();
+          dbHandler = new _databaseHandler["default"]();
+          _context2.next = 4;
+          return _regenerator["default"].awrap(dbHandler.setUserVerified(req.params.userID));
 
-          case 9:
-          case "end":
-            return _context2.stop();
-        }
+        case 4:
+          dbHandler.close();
+          res.status(200).send();
+          _context2.next = 9;
+          break;
+
+        case 8:
+          res.status(500).send();
+
+        case 9:
+        case "end":
+          return _context2.stop();
       }
-    }, _callee2);
-  }));
-
-  return function (_x3, _x4) {
-    return _ref2.apply(this, arguments);
-  };
-}());
+    }
+  });
+});
 app.get('/logout', _login.verifyToken, function (req, res) {
   unlockImagesByUserID(req.user.ID);
   (0, _login.clearCookies)(res);
@@ -214,36 +217,29 @@ function isImageAlreadyLocked(imageID) {
 }
 
 io.sockets.on('connection', function (socket) {
-  /*let cookie = socket.request.headers.cookie;
-  let ID = cookie.slice(cookie.indexOf("ID=")+3, cookie.length);
-  ID = ID.slice(0, ID.indexOf(";"));
-  socket.join(`Room:${ID}`);
-  console.log(io.sockets.adapter.rooms);*/
   connections.push(socket);
   console.log('Connected: %s sockets connected...', connections.length); // Disconnect
 
   socket.on('disconnect', function (data) {
-    var cookie = socket.request.headers.cookie;
-    var ID = cookie.slice(cookie.indexOf("ID=") + 3, cookie.length);
-    ID = ID.slice(0, ID.indexOf(";"));
-    unlockImagesByUserID(ID);
+    var cookie = _cookie["default"].parse(socket.request.headers.cookie);
+
+    var user = (0, _login.verifyTokenSocket)(cookie.token);
+    unlockImagesByUserID(user.ID);
     connections.splice(connections.indexOf(socket), 1);
     console.log('Disconnected: %s sockets connected...', connections.length);
   });
   socket.on('lock', function (imageID) {
     if (!isImageAlreadyLocked(imageID)) {
-      var cookie = socket.request.headers.cookie;
-      var firstName = cookie.slice(cookie.indexOf("firstName=") + 10, cookie.length);
-      firstName = firstName.slice(0, firstName.indexOf(";"));
-      var lastName = cookie.slice(cookie.indexOf("lastName=") + 9, cookie.length);
-      lastName = lastName.slice(0, lastName.indexOf(";"));
-      var ID = cookie.slice(cookie.indexOf("ID=") + 3, cookie.length);
-      ID = ID.slice(0, ID.indexOf(";"));
+      var cookie = _cookie["default"].parse(socket.request.headers.cookie);
+
+      var user = (0, _login.verifyTokenSocket)(cookie.token);
+      var firstName = user.firstName;
+      var lastName = user.lastName;
       lockList.push({
         imageID: imageID,
         firstName: firstName,
         lastName: lastName,
-        ID: ID
+        ID: user.ID
       });
       socket.broadcast.emit('confirmedLock', {
         imageID: imageID,
