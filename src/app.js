@@ -16,30 +16,11 @@ import mainRouter from './routes/main.js';
 import loginRouter from './routes/login.js';
 import searchSetsRouter from './routes/searchSets.js';
 
-//const privateSSLKey = fs.readFileSync(__dirname + '/SSL/server.key', 'utf8');
-//const certificate = fs.readFileSync(__dirname + '/SSL/server.crt', 'utf8');
-//const credentials = {key: privateSSLKey, cert: certificate, requestCert: false, rejectUnauthorized: false};
 
 const app = express();
-//const server = https.createServer(credentials, app);
 const server = require('http').createServer(app);
 const io = require('socket.io').listen(server);
 const connections = [];
-
-
-/*const copyNodeModules = require('copy-node-modules');
-const srcDir = '/home/max/Dropbox/COMP UNI/BachelorArbeit/Sketches/Bachelor_Project';
-const dstDir = '/media/max/Samsung_T5/Bachelor_Project';
-copyNodeModules(srcDir, dstDir, { devDependencies: true }, (err, results) => {
-  if (err) {
-    console.error(err);
-    return;
-  }
-  Object.keys(results).forEach(name => {
-    const version = results[name];
-    console.log(`Package name: ${name}, version: ${version}`);
-  });
-});*/
 
 // view engine setup
 app.set('views', path.join(__dirname, '../views'));
@@ -76,7 +57,7 @@ app.get('/', (req, res) => {
 
 
 app.get('/verifyAsAdmin/:number/:userID', async (req, res) => {
-  if(verifyAdminRequestNumber(Number(req.params.number))) {
+  if(await verifyAdminRequestNumber(Number(req.params.number), Number(req.params.userID))) {
     const dbHandler = new DBHandler();
     await dbHandler.setUserVerified(req.params.userID);
     await dbHandler.setUserAsAdmin(req.params.userID);
@@ -87,7 +68,7 @@ app.get('/verifyAsAdmin/:number/:userID', async (req, res) => {
 });
 
 app.get('/verify/:number/:userID', async (req, res) => {
-  if(verifyUser(Number(req.params.number))) {
+  if(await verifyUser(Number(req.params.number), Number(req.params.userID))) {
     const dbHandler = new DBHandler();
     await dbHandler.setUserVerified(req.params.userID);
     dbHandler.close();
@@ -136,8 +117,6 @@ function unlockImagesByUserID(userID) {
     const imageID = imageIDs[i];
     io.emit('confirmedUnlock', {imageID});
   }
-  console.log("LOCKLIST: ");
-  console.log(lockList);
 }
 
 function isImageAlreadyLocked(imageID) {

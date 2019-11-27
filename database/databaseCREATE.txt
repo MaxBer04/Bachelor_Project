@@ -2,6 +2,7 @@ CREATE TABLE User(
 	ID INTEGER NOT NULL,
 	email VARCHAR NOT NULL UNIQUE,
 	passwordHash VARCHAR NOT NULL,
+	verificationNumber INTEGER NOT NULL,
 	verified BOOLEAN,
 	first_name VARCHAR NOT NULL CHECK(first_name <> '' AND first_name NOT GLOB '*[^a-zA-Z]*'),
 	last_name VARCHAR NOT NULL CHECK(last_name <> '' AND last_name NOT GLOB '*[^a-zA-Z]*'),

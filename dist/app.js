@@ -8,6 +8,7 @@ var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefau
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.getUploadSocket = getUploadSocket;
 exports["default"] = void 0;
 
 var _regenerator = _interopRequireDefault(require("@babel/runtime/regenerator"));
@@ -48,32 +49,31 @@ var server = require('http').createServer(app);
 var io = require('socket.io').listen(server);
 
 var connections = [];
-
-var copyNodeModules = require('copy-node-modules');
-
-var srcDir = '/home/max/Dropbox/COMP UNI/BachelorArbeit/Sketches/Bachelor_Project';
-var dstDir = '/media/max/Samsung_T5/Bachelor_Project';
-copyNodeModules(srcDir, dstDir, {
-  devDependencies: true
-}, function (err, results) {
+/*const copyNodeModules = require('copy-node-modules');
+const srcDir = '/home/max/Dropbox/COMP UNI/BachelorArbeit/Sketches/Bachelor_Project';
+const dstDir = '/media/max/Samsung_T5/Bachelor_Project';
+copyNodeModules(srcDir, dstDir, { devDependencies: true }, (err, results) => {
   if (err) {
     console.error(err);
     return;
   }
-
-  Object.keys(results).forEach(function (name) {
-    var version = results[name];
-    console.log("Package name: ".concat(name, ", version: ").concat(version));
+  Object.keys(results).forEach(name => {
+    const version = results[name];
+    console.log(`Package name: ${name}, version: ${version}`);
   });
-}); // view engine setup
+});*/
+// view engine setup
 
 app.set('views', _path["default"].join(__dirname, '../views'));
 app.set('view engine', 'pug');
 app.use((0, _morgan["default"])('dev'));
 app.use(_bodyParser["default"].urlencoded({
-  extended: true
+  extended: true,
+  limit: '50000000mb'
 }));
-app.use(_bodyParser["default"].json());
+app.use(_bodyParser["default"].json({
+  limit: '50000000mb'
+}));
 app.use((0, _cookieParser["default"])());
 app.use(function (req, res, next) {
   // check if client sent cookie
@@ -105,29 +105,33 @@ app.get('/verifyAsAdmin/:number/:userID', function _callee(req, res) {
     while (1) {
       switch (_context.prev = _context.next) {
         case 0:
-          if (!(0, _login.verifyAdminRequestNumber)(Number(req.params.number))) {
-            _context.next = 10;
+          _context.next = 2;
+          return _regenerator["default"].awrap((0, _login.verifyAdminRequestNumber)(Number(req.params.number), Number(req.params.userID)));
+
+        case 2:
+          if (!_context.sent) {
+            _context.next = 12;
             break;
           }
 
           dbHandler = new _databaseHandler["default"]();
-          _context.next = 4;
+          _context.next = 6;
           return _regenerator["default"].awrap(dbHandler.setUserVerified(req.params.userID));
 
-        case 4:
-          _context.next = 6;
+        case 6:
+          _context.next = 8;
           return _regenerator["default"].awrap(dbHandler.setUserAsAdmin(req.params.userID));
 
-        case 6:
+        case 8:
           dbHandler.close();
           res.status(200).send();
-          _context.next = 11;
+          _context.next = 13;
           break;
 
-        case 10:
+        case 12:
           res.status(500).send();
 
-        case 11:
+        case 13:
         case "end":
           return _context.stop();
       }
@@ -140,25 +144,29 @@ app.get('/verify/:number/:userID', function _callee2(req, res) {
     while (1) {
       switch (_context2.prev = _context2.next) {
         case 0:
-          if (!(0, _login.verifyUser)(Number(req.params.number))) {
-            _context2.next = 8;
+          _context2.next = 2;
+          return _regenerator["default"].awrap((0, _login.verifyUser)(Number(req.params.number), Number(req.params.userID)));
+
+        case 2:
+          if (!_context2.sent) {
+            _context2.next = 10;
             break;
           }
 
           dbHandler = new _databaseHandler["default"]();
-          _context2.next = 4;
+          _context2.next = 6;
           return _regenerator["default"].awrap(dbHandler.setUserVerified(req.params.userID));
 
-        case 4:
+        case 6:
           dbHandler.close();
           res.status(200).send();
-          _context2.next = 9;
+          _context2.next = 11;
           break;
 
-        case 8:
+        case 10:
           res.status(500).send();
 
-        case 9:
+        case 11:
         case "end":
           return _context2.stop();
       }
@@ -216,6 +224,12 @@ function isImageAlreadyLocked(imageID) {
   } else return false;
 }
 
+var uploaderSocket;
+
+function getUploadSocket(message) {
+  return uploaderSocket;
+}
+
 io.sockets.on('connection', function (socket) {
   connections.push(socket);
   console.log('Connected: %s sockets connected...', connections.length); // Disconnect
@@ -259,6 +273,9 @@ io.sockets.on('connection', function (socket) {
   });
   socket.on('getLockedList', function () {
     socket.emit('acceptLockedList', lockList);
+  });
+  socket.on('startingUpload', function () {
+    uploaderSocket = this;
   });
 });
 var _default = app;

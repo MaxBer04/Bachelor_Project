@@ -231,7 +231,7 @@ export class displaySearchedSets {
   createPolygonSelectOptions(polygons) {
     const annotationSelect = document.querySelector("#annotationSelect > select");
     this._polygonList = polygons;
-    // length -1 hier, da das aktuellste polygon ja das leere currentPolygon ist
+    // length -1, because the last one is the unfinished current polygon
     for(let i = 0; i < polygons.length-1; i++) {
       const option = document.createElement("option");
       option.setAttribute("data-annotationID", polygons[i].ID);
@@ -258,7 +258,6 @@ export class displaySearchedSets {
   }
 
   clearForNewPolygon() {
-    // clear Canvas
     this.clearAllChilds(document.getElementsByClassName("attributes-list")[0]);
     document.getElementsByClassName("text")[0].innerHTML = '';
   }
@@ -281,7 +280,7 @@ export class displaySearchedSets {
       }
     }
     this._boardState.selectedInEditor = true;
-    this._drawer.reDrawImageAndBoard(this._selectedImage.path, this._boardState); //und newPolygon dann als augewähltes markieren
+    this._drawer.reDrawImageAndBoard(this._selectedImage.path, this._boardState); // mark newPolygon as current polygon
   }
 
   displayAttributes(polygon) {

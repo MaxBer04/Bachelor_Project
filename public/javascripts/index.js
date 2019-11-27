@@ -24,7 +24,7 @@ let currentlyDrawing;
 let imageWidth;
 let imageHeight;
 let img;
-let editorTool = false;
+let imageSliderInitialized = false;
 let drawDevice = "Lines";
 let supportedZoomMode = false;
 
@@ -50,7 +50,7 @@ function getTranslatedMousePosition(evt) {
     let originalX = evt.offsetX || (evt.pageX - boardState.boardConfig.canvas.offsetLeft);
     let originalY = evt.offsetY || (evt.pageY - boardState.boardConfig.canvas.offsetTop);
     let {X, Y} = viewState.getTransformedPoint(originalX, originalY);
-    // Falls aufgrund von lags o.ä. der Browser die Mouse Position nicht direkt übermitteln kann, die letztbekannte Position zurückgeben
+    // Falls aufgrund von lags o.ä. der Browser die Mausposition nicht direkt übermitteln kann, die letztbekannte Position zurückgeben
     lastX = X;
     lastY = Y;
     return {X, Y};
@@ -129,7 +129,7 @@ function lineIntersects(p0, p1, p2, p3) {
   s1_y = p1['Y'] - p0['Y'];
   s2_x = p3['X'] - p2['X'];
   s2_y = p3['Y'] - p2['Y'];
-0
+
   let s, t;
   s = (-s1_y * (p0['X'] - p2['X']) + s1_x * (p0['Y'] - p2['Y'])) / (-s2_x * s1_y + s1_x * s2_y);
   t = ( s2_x * (p0['Y'] - p2['Y']) - s2_y * (p0['X'] - p2['X'])) / (-s2_x * s1_y + s1_x * s2_y);
@@ -155,7 +155,7 @@ function handlePoint(X, Y) {
     return false;
   }
   if(checkIntersect(X,Y)){
-    customAlert('The line you are drawing intersect another line');
+    customAlert('The line you are drawing intersect another line of your polygon!');
     return false;
   }
 
@@ -230,7 +230,7 @@ function startTriangle(startX, startY) {
 }
 
 function drawDynamicTriangle(newX, newY) {
-  // Das currentPolygon ist/sollte hier das zu malende Dreieck sein
+  // Das currentPolygon ist hier das zu malende Dreieck
   const {X: startX, Y: startY} = boardState.currentPolygon.points[0];
   // Punkte berechnen
   const p2 = {X: newX, Y: startY};
@@ -276,7 +276,7 @@ function finishCircle() {
 }
 
 export function newSelectedPolygon(polygon) {
-  //remove old selected
+  //unmarkiere das alte selected polygon
   boardState.currentPolygonCollection.polygons.forEach((pol) => {
     if(pol.ID !== polygon.ID && pol.selectedInEditor) pol.selectedInEditor = false;
   });
@@ -402,16 +402,15 @@ export async function loadSetIntoApp(imageSetID) {
           imageSlider.initialize();
           imageSlider.closeLoad();
           imageSlider.loadSetIntoSlider(JSON.parse(request.response), document);
+          imageSlider.addEventListenerForImages();
           document.getElementsByClassName("image-slider-images")[0].setAttribute("data-setID", imageSetID);
           boardState.imageSetID = imageSetID;
-          imageSlider.lockImages(lockedList);
-          imageSlider.addEventListeners();
+          if(lockedList) imageSlider.lockImages(lockedList);
         }
       }
       request.send();
     }
   } else {
-    console.time();
     unlockOldImage();
     socket.emit("getLockedList", null);
     socket.on('acceptLockedList', async function(lockedListAns){
@@ -429,10 +428,10 @@ export async function loadSetIntoApp(imageSetID) {
         imageSlider.initialize();
         imageSlider.closeLoad();
         imageSlider.loadSetIntoSlider(JSON.parse(request.response), document);
+        imageSlider.addEventListenerForImages();
         document.getElementsByClassName("image-slider-images")[0].setAttribute("data-setID", imageSetID);
         boardState.imageSetID = imageSetID;
-        imageSlider.lockImages(lockedList);
-        imageSlider.addEventListeners();
+        if(lockedList) imageSlider.lockImages(lockedList);
       }
     }
     request.send();
@@ -592,10 +591,6 @@ function addEventListeners() {
       document.getElementsByClassName("uploadScreenDecision")[0].classList.remove("cover");
       document.getElementsByClassName("uploadScreen")[0].classList.add("cover");
     }, false);
-    //document.getElementById("folderUploadForm").onsubmit = function(evt) {
-     // evt.preventDefault();
-
-    //}
 
     document.getElementById("folderUpload").addEventListener("change", async (evt) => {
 
@@ -623,59 +618,6 @@ function addEventListeners() {
         waitForSave.removeChild(waitForSave.firstChild);
         closeLoadScreen();
         customAlert("Upload was successfull! Please wait a bit, before trying to access the new sets!")
-        /*let request;
-        if(window.XMLHttpRequest) request = new XMLHttpRequest();
-        else request = new ActiveXObject("Microsoft.XMLHTTP");
-        const formData = new FormData();
-        request.open('POST', `/main/sets/multiple2`, true);
-        request.setRequestHeader("Content-Type", "form/multi-part");
-        request.onreadystatechange = () => {
-          if(request.readyState === 4 && request.status === 200) {
-            document.getElementsByClassName("uploadScreenDecision")[0].classList.remove("cover");
-            customAlert("Upload was successfull! Please wait a bit, before trying to access the new sets!")
-          }
-        }
-        for(let i = 0; i < files.length; i++) {
-          formData.append("images",files[i], window.btoa(files[i].webkitRelativePath));
-        }
-        imageSlider.closeLoad();
-        showLoadScreen();
-        const messageContainer = document.createElement("div");
-        messageContainer.classList.add("saveMessage");
-        const p = document.createElement("p");
-        p.innerHTML = 'Sending files to server...';
-        messageContainer.appendChild(p);
-        const waitForSave = document.getElementsByClassName("waitForSave")[0];
-        waitForSave.prepend(messageContainer);
-        let success = false;
-        while(!success) {
-          try {
-            socket.emit('startingUpload');
-            socket.on('uploadStateUpdate', function(message) {
-            p.innerHTML = message;
-              if(message === 'finished') {
-                waitForSave.removeChild(waitForSave.firstChild);
-                closeLoadScreen();
-              }
-            });
-            request.upload.onprogress = function(e) {
-              if (e.lengthComputable) {
-                var percentage = Math.round(((e.loaded / e.total) * 100)*100)/100;
-                p.innerHTML = "Saving images to /uploads: <br> Progress: "+percentage + "%";
-              }
-            };
-            
-            success = true;
-            console.log(Object.keys(formData));
-            while(Object.keys(formData).length === 0) {
-              console.log("Warten...")
-              await setTimeout(() => {}, 1000);
-            }
-            request.send(formData);
-          } catch(error) {
-            console.error(error)
-          }
-        }*/
       }
     }, false);
     document.getElementById("searchAnnotations").addEventListener("click", (evt) => {
@@ -709,18 +651,16 @@ function addEventListeners() {
           request.send();
       }
     }, false);
-  } catch(error) {
-    //console.error(error);
-  }
+  } catch(error) {}
 
   document.getElementById("uploadForImageSet").addEventListener("change", (evt) => {
     imageSlider.handleFileUpload(document.querySelector("#uploadForImageSet").files);
   }, false);
 
-  // prevent default undo/redo bei inputs
+  // default undo/redo bei inputs verhindern
   Array.from(document.getElementsByTagName("input")).forEach((input) => {
     input.addEventListener("keydown", function(evt){
-      if (evt.ctrlKey && ((evt.key === 'z' || evt.key === 'Z') || (evt.key === 'y' || evt.key === 'Y'))) {
+      if ((evt.ctrlKey || evt.metaKey) && ((evt.key === 'z' || evt.key === 'Z') || (evt.key === 'y' || evt.key === 'Y'))) {
         evt.preventDefault();
       }
     });
@@ -758,13 +698,13 @@ function addEventListeners() {
         document.getElementById("drawBoard").className = "shift-pressed";
       }
 
-      if(evt.ctrlKey && (evt.key =="y" || evt.key == "Y")) {
+      if((evt.ctrlKey || evt.metaKey) && (evt.key =="y" || evt.key == "Y")) {
         boardState = boardStateHistory.redoBoardState(editor) || boardState;
         editor.populateOptionList();
         editor.correctTextField();
         drawer.reDrawBoardState(boardState);
       }
-      else if(evt.ctrlKey && (evt.key=="z" || evt.key=="Z")) {
+      else if((evt.ctrlKey || evt.metaKey) && (evt.key=="z" || evt.key=="Z")) {
         boardState = boardStateHistory.undoBoardState(editor) || boardState;
         editor.populateOptionList();
         editor.correctTextField();
@@ -867,7 +807,7 @@ function addCanvasEventListeners() {
     let {X, Y} = getTranslatedMousePosition(evt)
     if(checkIfInPic(X, Y) && !evt.shiftKey){
       if((evt.which === 1 || evt.button === 0) && drawDevice === "Lines") {
-        if(evt.ctrlKey){
+        if((evt.ctrlKey || evt.metaKey)){
           handleFinishPoint();
         } else {
           handlePoint(X, Y);
@@ -909,7 +849,6 @@ function addCanvasEventListeners() {
 
     } else if (drawStart) {
 
-      //const {X: imageX, Y: imageY} = viewState.getTransformedPoint(imageWidth*boardState.boardConfig.shrinkage, imageHeight*boardState.boardConfig.shrinkage);
       const imageXmax = imageWidth*boardState.boardConfig.shrinkage;
       const imageYmax = imageHeight*boardState.boardConfig.shrinkage;
       if(drawDevice !== "Circle"){
@@ -963,7 +902,7 @@ function addCanvasEventListeners() {
     if (delta) {
       let {X, Y} = getTranslatedMousePosition(evt)
       viewState.zoom(delta, X, Y);
-      //drawer.scaleThicknessOnZoom(Math.pow(viewState.scaleFactor,delta));
+      drawer.scaleThicknessOnZoom(Math.pow(viewState.scaleFactor,delta));
       viewState.zoomImage(delta, X, Y, boardConfigImage);
       drawer.clearAndDrawImage(img, boardConfigImage, imageWidth, imageHeight); 
       drawer.reDrawBoardState(boardState);
@@ -976,7 +915,7 @@ function addCanvasEventListeners() {
       if (delta) {
         let {X, Y} = getTranslatedMousePosition(evt)
         viewState.zoom(delta, X, Y);
-        //drawer.scaleThicknessOnZoom(Math.pow(viewState.scaleFactor,delta));
+        drawer.scaleThicknessOnZoom(Math.pow(viewState.scaleFactor,delta));
         viewState.zoomImage(delta, X, Y, boardConfigImage);
         drawer.clearAndDrawImage(img, boardConfigImage, imageWidth, imageHeight); 
         drawer.reDrawBoardState(boardState);
@@ -1015,7 +954,7 @@ function initializeCanvases(imagePath) {
 }
 
 async function initialize(imagePath, imageID) {
-  boardConfigImage = new boardStateConstructor.BoardConfig(document.getElementById("imageBoard"), document); //zuerst mit dem image canvas
+  boardConfigImage = new boardStateConstructor.BoardConfig(document.getElementById("imageBoard"), document);
   boardConfigImage.setContext();
   boardStateHistory = new boardStateConstructor.BoardStateHistory();
 
@@ -1029,7 +968,7 @@ async function initialize(imagePath, imageID) {
     boardState = serverBoardState;
     boardState.boardConfig = boardConfigDraw;
   }
-  viewState = new viewStateConstructor.ViewState(boardConfigDraw); //hier also dann boardConfigDraw
+  viewState = new viewStateConstructor.ViewState(boardConfigDraw);
   boardStateHistory.copyBoardStateToHistory(boardState);
   drawer = new drawerConsturctor.Drawer(boardState, boardConfigDraw, viewState);
   drawer.drawImage(img, boardConfigImage);
@@ -1049,10 +988,17 @@ async function initialize(imagePath, imageID) {
   editor.removeSelectedOption();
 }
 
+// Start Javascript in App
 if(document.URL.startsWith(window.location.origin+"/main")) {
   document.addEventListener("DOMContentLoaded",function(){
     socket = io.connect({transports: ['websocket'], upgrade: false});
     imageSlider = new imageSliderConstructor.ImageSlider(document);
+    imageSlider.initialize();
+    imageSlider.addEventListenerForImages();
+    if(!imageSliderInitialized) {
+      imageSlider.addEventListeners();
+      imageSliderInitialized = true;
+    }
   
     const cookie = document.cookie.split(';');
     cookie.forEach((cookie) => {

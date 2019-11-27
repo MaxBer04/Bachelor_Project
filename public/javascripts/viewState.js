@@ -10,8 +10,6 @@ export class ViewState {
   set scaleFactor(scaleFactor) { this._scaleFactor = scaleFactor; }
 
   zoom(delta, X, Y){
-    //this._boardConfig.ctx.save();
-    //this._boardConfig.ctx.transform(1/delta, 0, 0, 1/delta, 0, 0);
     this._boardConfig.ctx.translate(X, Y);
     var factor = Math.pow(this._scaleFactor,delta);
     this._boardConfig.ctx.scale(factor,factor);
@@ -36,8 +34,6 @@ export class ViewState {
 }
 
 
-// Adds ctx.getTransform() - returns an SVGMatrix
-// Adds ctx.transformedPoint(x,y) - returns an SVGPoint
 function detectTransforms(ctx){
   var svg = document.createElementNS("http://www.w3.org/2000/svg",'svg');
   var xform = svg.createSVGMatrix();
@@ -75,17 +71,6 @@ function detectTransforms(ctx){
     m2.a=a; m2.b=b; m2.c=c; m2.d=d; m2.e=e; m2.f=f;
     xform = xform.multiply(m2);
     return transform.call(ctx,a,b,c,d,e,f);
-  };
-
-  var setTransform = ctx.setTransform;
-  ctx.setTransform = function(a,b,c,d,e,f){
-    xform.a = a;
-    xform.b = b;
-    xform.c = c;
-    xform.d = d;
-    xform.e = e;
-    xform.f = f;
-    return setTransform.call(ctx,a,b,c,d,e,f);
   };
 
   var pt  = svg.createSVGPoint();

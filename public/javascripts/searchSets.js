@@ -40,9 +40,7 @@ export class SearchSets {
       searchSetsObj.userMode = document.getElementById("usersSwitch").checked;
       searchSetsObj.attributesMode = document.getElementById("attributesSwitch").checked;
       const displaySetsObj = new displaySets.displaySearchedSets(document);
-      console.time();
       await displaySetsObj.displaySets(searchSetsObj);
-      console.timeEnd();
     }, false);
 
     userSearch.addEventListener("input", async (evt) => {

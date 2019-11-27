@@ -4,8 +4,6 @@ import DBHandler from '../databaseHandler.js';
 import {getUploadSocket} from '../app.js';
 import multer from 'multer';
 import atob from 'atob';
-import fs from 'fs';
-import path from 'path';
 
 const storage = multer.diskStorage({
   destination: function (req, res, cb) {
@@ -19,8 +17,6 @@ const dbHandler = new DBHandler();
 
 router.get('/', verifyToken, async (req, res, next)  => {
   const verified = await dbHandler.isVerified(req.user.ID);
-  //const user = await getCookieWithIsAdmin(req.cookies);
-  console.log(req.user);
   const user = req.user;
   user.verified = verified;
   res.render('main', user, (err, html) => {
@@ -41,7 +37,6 @@ router.get('/attributes', verifyToken, async (req, res) => {
 router.get('/attributes/text/:firstChar', verifyToken, async (req, res) => {
   const attributes = await dbHandler.getAllAttributesText();
   let filteredAttributes = attributes.filter(attribute => {return attribute.text.startsWith(req.params.firstChar)})
-  console.log(filteredAttributes)
   res.json(filteredAttributes);
 });
 
@@ -73,7 +68,6 @@ router.get("/admins/contactEmails", verifyToken, async (req, res) => {
 });
 
 router.post("/admins/contactEmails/:newContactMail", verifyToken, async (req, res) => {
-  console.log(req.params.newContactMail);
   await dbHandler.updateAdminContactMail(req.user.ID, req.params.newContactMail);
   res.status(200).send();
 });
@@ -116,33 +110,10 @@ router.post('/sets', verifyToken, isAdmin, upload.array('images'), async (req, r
   res.status(200).send();
 });
 
-const busboy = require('connect-busboy');
-router.use(busboy({
-  highWaterMark: 2 * 1048 * 1048
-}));
-router.post('/sets/multiple2', verifyToken, isAdmin, async (req, res) => {
-  req.pipe(req.busboy);
-  req.busboy.on('file', (fieldname, file, filename) => {
-    console.log(`Upload of '${filename}' started`);
-
-    // Create a write stream of the new file
-    const fstream = fs.createWriteStream(path.join(path.join(__dirname, '../../uploads'), filename));
-    // Pipe it trough
-    file.pipe(fstream);
-
-    // On finish of the upload
-    fstream.on('close', () => {
-        console.log(`Upload of '${filename}' finished`);
-    });
-  });
-  req.busboy.on('finish', () => {res.status(200).send()});
-});
-
 router.post('/sets/multiple', verifyToken, isAdmin, upload.array('images'), async (req, res) => {
   try {
     const files = req.files;
     const socket = getUploadSocket();
-    console.log("HIER")
     const setNamesAndImages = {};
     for(let i = 0; i < files.length; i++) {
       const pathParts = atob(files[i].originalname).split("/");
@@ -161,7 +132,6 @@ router.post('/sets/multiple', verifyToken, isAdmin, upload.array('images'), asyn
       }
     }
     socket.emit("uploadStateUpdate", 'Saving to database...');
-    console.log("HIER")
     let x = 1;
     const setCount = Object.keys(setNamesAndImages).length;
     for(const setName in setNamesAndImages) {

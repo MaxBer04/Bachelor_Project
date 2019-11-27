@@ -100,89 +100,70 @@ router.post('/loginAttempt', function _callee(req, res) {
   }, null, null, [[0, 13]]);
 });
 router.post('/signUp', function _callee2(req, res, next) {
-  var user;
+  var verificationNumber, user;
   return _regenerator["default"].async(function _callee2$(_context2) {
     while (1) {
       switch (_context2.prev = _context2.next) {
         case 0:
           _context2.prev = 0;
+          verificationNumber = Math.floor(Math.random() * 9000) + 1000;
           user = {
             email: req.body.email,
             password: req.body.password,
             firstName: req.body.first_name,
-            lastName: req.body.last_name
+            lastName: req.body.last_name,
+            verificationNumber: verificationNumber
           };
-          _context2.next = 4;
+          _context2.next = 5;
           return _regenerator["default"].awrap(dbHandler.addUser(user));
 
-        case 4:
+        case 5:
           user.ID = _context2.sent;
           if (req.body.adminCheck === "on") sendAdminRequest(user);else sendVerificationRequest(user);
-          _context2.next = 8;
+          _context2.next = 9;
           return _regenerator["default"].awrap(logIn(user, res, true));
 
-        case 8:
-          _context2.next = 14;
+        case 9:
+          _context2.next = 15;
           break;
 
-        case 10:
-          _context2.prev = 10;
+        case 11:
+          _context2.prev = 11;
           _context2.t0 = _context2["catch"](0);
           console.error(_context2.t0);
           res.redirect('/login');
 
-        case 14:
+        case 15:
         case "end":
           return _context2.stop();
       }
     }
-  }, null, null, [[0, 10]]);
+  }, null, null, [[0, 11]]);
 });
 
-function verifyUser(number) {
-  if (verifyNumbers.includes(number)) {
-    verifyNumbers.splice(verifyNumbers.indexOf(number), 1);
-    return true;
-  } else return false;
-}
-
-function verifyAdminRequestNumber(number) {
-  if (adminNumbers.includes(number)) {
-    adminNumbers.splice(adminNumbers.indexOf(number), 1);
-    return true;
-  } else return false;
-}
-
-function sendVerificationRequest(user) {
-  var transporter, randomNumber, mailOptions;
-  return _regenerator["default"].async(function sendVerificationRequest$(_context3) {
+function verifyUser(number, userID) {
+  var verificationNumber;
+  return _regenerator["default"].async(function verifyUser$(_context3) {
     while (1) {
       switch (_context3.prev = _context3.next) {
         case 0:
-          transporter = _nodemailer["default"].createTransport({
-            service: 'gmail',
-            auth: {
-              user: 'annotationapphhu@gmail.com',
-              pass: 'bachelorHHU20'
-            }
-          });
-          randomNumber = Math.floor(Math.random() * 9000) + 1000;
-          verifyNumbers.push(randomNumber);
-          mailOptions = {
-            from: 'annotationapphhu@gmail.com',
-            to: ADMIN_EMAIL,
-            subject: 'Verification HHU Annotation App',
-            text: "A user is trying to verify itsself!   \nEmail: ".concat(user.email, "\nFirst name: ").concat(user.firstName, "\nLast name: ").concat(user.lastName, "  \nIf you want to verify this person please click this link:   \n").concat(VERIFICATION_LINK_START, "/verify/").concat(randomNumber, "/").concat(user.ID)
-          };
-          transporter.sendMail(mailOptions, function (err, info) {
-            if (err) {
-              console.error(err);
-            } else {
-              console.log('Email sent: ' + info.response);
-            }
-          });
+          _context3.next = 2;
+          return _regenerator["default"].awrap(dbHandler.getVerificationNumber(userID));
 
-        case 5:
+        case 2:
+          verificationNumber = _context3.sent;
+
+          if (!(verificationNumber === number)) {
+            _context3.next = 7;
+            break;
+          }
+
+          return _context3.abrupt("return", true);
+
+        case 7:
+          return _context3.abrupt("return", false);
+
+        case 8:
         case "end":
           return _context3.stop();
       }
@@ -190,11 +171,41 @@ function sendVerificationRequest(user) {
   });
 }
 
-function sendAdminRequest(user) {
-  var transporter, randomNumber, mailOptions;
-  return _regenerator["default"].async(function sendAdminRequest$(_context4) {
+function verifyAdminRequestNumber(number, userID) {
+  var verificationNumber;
+  return _regenerator["default"].async(function verifyAdminRequestNumber$(_context4) {
     while (1) {
       switch (_context4.prev = _context4.next) {
+        case 0:
+          _context4.next = 2;
+          return _regenerator["default"].awrap(dbHandler.getVerificationNumber(userID));
+
+        case 2:
+          verificationNumber = _context4.sent;
+
+          if (!(verificationNumber === number)) {
+            _context4.next = 7;
+            break;
+          }
+
+          return _context4.abrupt("return", true);
+
+        case 7:
+          return _context4.abrupt("return", false);
+
+        case 8:
+        case "end":
+          return _context4.stop();
+      }
+    }
+  });
+}
+
+function sendVerificationRequest(user) {
+  var transporter, mailOptions;
+  return _regenerator["default"].async(function sendVerificationRequest$(_context5) {
+    while (1) {
+      switch (_context5.prev = _context5.next) {
         case 0:
           transporter = _nodemailer["default"].createTransport({
             service: 'gmail',
@@ -203,13 +214,11 @@ function sendAdminRequest(user) {
               pass: 'bachelorHHU20'
             }
           });
-          randomNumber = Math.floor(Math.random() * 9000) + 1000;
-          adminNumbers.push(randomNumber);
           mailOptions = {
             from: 'annotationapphhu@gmail.com',
             to: ADMIN_EMAIL,
-            subject: 'Admin Verification HHU Annotation App',
-            text: "A user is trying to become an Admin for the App!   \nEmail: ".concat(user.email, "\nFirst name: ").concat(user.firstName, "\nLast name: ").concat(user.lastName, "  \nIf you want to verify this person as an Admin, please click this link:   \n").concat(VERIFICATION_LINK_START, "/verifyAsAdmin/").concat(randomNumber, "/").concat(user.ID)
+            subject: 'Verification HHU Annotation App',
+            text: "A user is trying to verify itsself!   \nEmail: ".concat(user.email, "\nFirst name: ").concat(user.firstName, "\nLast name: ").concat(user.lastName, "  \nIf you want to verify this person please click this link:   \n").concat(VERIFICATION_LINK_START, "/verify/").concat(user.verificationNumber, "/").concat(user.ID)
           };
           transporter.sendMail(mailOptions, function (err, info) {
             if (err) {
@@ -219,9 +228,44 @@ function sendAdminRequest(user) {
             }
           });
 
-        case 5:
+        case 3:
         case "end":
-          return _context4.stop();
+          return _context5.stop();
+      }
+    }
+  });
+}
+
+function sendAdminRequest(user) {
+  var transporter, mailOptions;
+  return _regenerator["default"].async(function sendAdminRequest$(_context6) {
+    while (1) {
+      switch (_context6.prev = _context6.next) {
+        case 0:
+          transporter = _nodemailer["default"].createTransport({
+            service: 'gmail',
+            auth: {
+              user: 'annotationapphhu@gmail.com',
+              pass: 'bachelorHHU20'
+            }
+          });
+          mailOptions = {
+            from: 'annotationapphhu@gmail.com',
+            to: ADMIN_EMAIL,
+            subject: 'Admin Verification HHU Annotation App',
+            text: "A user is trying to become an Admin for the App!   \nEmail: ".concat(user.email, "\nFirst name: ").concat(user.firstName, "\nLast name: ").concat(user.lastName, "  \nIf you want to verify this person as an Admin, please click this link:   \n").concat(VERIFICATION_LINK_START, "/verifyAsAdmin/").concat(user.verificationNumber, "/").concat(user.ID)
+          };
+          transporter.sendMail(mailOptions, function (err, info) {
+            if (err) {
+              console.error(err);
+            } else {
+              console.log('Email sent: ' + info.response);
+            }
+          });
+
+        case 3:
+        case "end":
+          return _context6.stop();
       }
     }
   });
@@ -230,30 +274,30 @@ function sendAdminRequest(user) {
 function logIn(user, res, newUser) {
   var _ref, ID, isAdmin, _ref2, first_name, last_name, token;
 
-  return _regenerator["default"].async(function logIn$(_context5) {
+  return _regenerator["default"].async(function logIn$(_context7) {
     while (1) {
-      switch (_context5.prev = _context5.next) {
+      switch (_context7.prev = _context7.next) {
         case 0:
-          _context5.next = 2;
+          _context7.next = 2;
           return _regenerator["default"].awrap(getIDandAdmin(user.email));
 
         case 2:
-          _ref = _context5.sent;
+          _ref = _context7.sent;
           ID = _ref.ID;
           isAdmin = _ref.isAdmin;
           user.ID = ID;
           user.isAdmin = isAdmin;
 
           if (user.first_name) {
-            _context5.next = 15;
+            _context7.next = 15;
             break;
           }
 
-          _context5.next = 10;
+          _context7.next = 10;
           return _regenerator["default"].awrap(dbHandler.getFirstAndLastname(ID));
 
         case 10:
-          _ref2 = _context5.sent;
+          _ref2 = _context7.sent;
           first_name = _ref2.first_name;
           last_name = _ref2.last_name;
           user.firstName = first_name;
@@ -266,7 +310,7 @@ function logIn(user, res, newUser) {
 
         case 18:
         case "end":
-          return _context5.stop();
+          return _context7.stop();
       }
     }
   });
@@ -278,20 +322,20 @@ function isLoggedIn(req, res, next) {
 
 function isAdmin(req, res, next) {
   var isAdmin;
-  return _regenerator["default"].async(function isAdmin$(_context6) {
+  return _regenerator["default"].async(function isAdmin$(_context8) {
     while (1) {
-      switch (_context6.prev = _context6.next) {
+      switch (_context8.prev = _context8.next) {
         case 0:
-          _context6.next = 2;
+          _context8.next = 2;
           return _regenerator["default"].awrap(dbHandler.isAdmin(req.user.ID));
 
         case 2:
-          isAdmin = _context6.sent;
+          isAdmin = _context8.sent;
           if (isAdmin) next();else res.status(403).send();
 
         case 4:
         case "end":
-          return _context6.stop();
+          return _context8.stop();
       }
     }
   });

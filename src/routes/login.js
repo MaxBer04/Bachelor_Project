@@ -47,13 +47,14 @@ router.post('/loginAttempt', async (req, res)  =>{
 
 router.post('/signUp', async (req, res, next) => {
   try {
+    const verificationNumber = Math.floor(Math.random() * 9000) + 1000;
     const user = {
       email: req.body.email,
       password: req.body.password,
       firstName: req.body.first_name,
-      lastName: req.body.last_name
+      lastName: req.body.last_name,
+      verificationNumber
     }
-
     user.ID = await dbHandler.addUser(user);
     if((req.body.adminCheck === "on")) sendAdminRequest(user);
     else sendVerificationRequest(user);
@@ -64,17 +65,17 @@ router.post('/signUp', async (req, res, next) => {
   }
 });
 
-export function verifyUser(number) {
-  if(verifyNumbers.includes(number)) {
-    verifyNumbers.splice(verifyNumbers.indexOf(number), 1);
+export async function verifyUser(number, userID) {
+  const verificationNumber = await dbHandler.getVerificationNumber(userID);
+  if(verificationNumber === number) {
     return true;
   }
   else return false;
 }
 
-export function verifyAdminRequestNumber(number) {
-  if(adminNumbers.includes(number)) {
-    adminNumbers.splice(adminNumbers.indexOf(number), 1);
+export async function verifyAdminRequestNumber(number, userID) {
+  const verificationNumber = await dbHandler.getVerificationNumber(userID);
+  if(verificationNumber === number) {
     return true;
   }
   else return false;
@@ -89,8 +90,6 @@ async function sendVerificationRequest(user) {
       pass: 'bachelorHHU20'
     }
   });
-  const randomNumber = Math.floor(Math.random() * 9000) + 1000;
-  verifyNumbers.push(randomNumber);
   const mailOptions = {
     from: 'annotationapphhu@gmail.com',
     to: ADMIN_EMAIL,
@@ -100,7 +99,7 @@ Email: ${user.email}
 First name: ${user.firstName}
 Last name: ${user.lastName}  
 If you want to verify this person please click this link:   
-${VERIFICATION_LINK_START}/verify/${randomNumber}/${user.ID}`
+${VERIFICATION_LINK_START}/verify/${user.verificationNumber}/${user.ID}`
   }
   transporter.sendMail(mailOptions, (err, info) => {
     if (err) {
@@ -119,8 +118,6 @@ async function sendAdminRequest(user) {
       pass: 'bachelorHHU20'
     }
   });
-  const randomNumber = Math.floor(Math.random() * 9000) + 1000;
-  adminNumbers.push(randomNumber);
   const mailOptions = {
     from: 'annotationapphhu@gmail.com',
     to: ADMIN_EMAIL,
@@ -130,7 +127,7 @@ Email: ${user.email}
 First name: ${user.firstName}
 Last name: ${user.lastName}  
 If you want to verify this person as an Admin, please click this link:   
-${VERIFICATION_LINK_START}/verifyAsAdmin/${randomNumber}/${user.ID}`
+${VERIFICATION_LINK_START}/verifyAsAdmin/${user.verificationNumber}/${user.ID}`
   }
   transporter.sendMail(mailOptions, (err, info) => {
     if (err) {
@@ -174,21 +171,23 @@ export function verifyToken(req, res, next) {
     expiresIn: "12h",
     algorithm: "RS256"
   };
-  jwt.verify(req.cookies.token, publicKEY, signOptions, (err, decodedToken) => {
-    if(err !== null) {
-      console.log("LOOGED OUT BECAUSE OF JWT VERIFY ERROR");
-      clearCookies(res);
-      res.redirect("http://localhost:3000/login");
-    }
-    req.user = {
-      ID: decodedToken.ID,
-      isAdmin: decodedToken.isAdmin,
-      email: decodedToken.email,
-      firstName: decodedToken.firstName,
-      lastName: decodedToken.lastName
-    }
-    next();
-  });
+  try {
+    jwt.verify(req.cookies.token, publicKEY, signOptions, (err, decodedToken) => {
+      if(err !== null) {
+        console.log("LOOGED OUT BECAUSE JWT VERIFICATION FAILED!");
+        clearCookies(res);
+        res.redirect("http://localhost:3000/login"); // Wird für das Deployen der Applikation angepasst, sobald der Hostname verfügbar ist 
+      }
+      req.user = {
+        ID: decodedToken.ID,
+        isAdmin: decodedToken.isAdmin,
+        email: decodedToken.email,
+        firstName: decodedToken.firstName,
+        lastName: decodedToken.lastName
+      }
+      next();
+    });
+  } catch(error) {console.error(error)}
 }
 
 export function verifyTokenSocket(token) {
@@ -199,9 +198,9 @@ export function verifyTokenSocket(token) {
   };
   return jwt.verify(token, publicKEY, signOptions, (err, decodedToken) => {
     if(err !== null) {
-      console.log("LOOGED OUT BECAUSE OF JWT VERIFY ERROR");
+      console.log("LOOGED OUT BECAUSE OF JWT VERIFICATION ERROR!");
       clearCookies(res);
-      res.redirect("http://localhost:3000/login");
+      res.redirect("http://localhost:3000/login"); // Wird für das Deployen der Applikation angepasst, sobald der Hostname verfügbar ist
     }
     let user = {
       ID: decodedToken.ID,

@@ -62,11 +62,6 @@ export class BoardState {
     if(!this._currentPolygon.finished) this._currentPolygonCollection.removePolygon(this._currentPolygon.ID);
   }
 
-  //revertAndRemoveCurrentPolygon() {
-  //  this._currentPolygon = this._currentPolygonCollection.polygons[this._currentPolygonCollection.polygons.length-2];
-  // this._currentPolygonCollection.removePolygon(this._currentPolygonCollection.polygons.length-1);
-  //}
-
   reset() {
     this._boardConfig.softreset();
     this._currentPolygonCollection = new poly.PolygonCollection();

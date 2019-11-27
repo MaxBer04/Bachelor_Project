@@ -3,7 +3,6 @@ export class Drawer {
     this._boardState = boardState;
     this._boardConfigImage = boardConfigImage;
     this._viewState = viewState;
-    this._colors = ['rgba(0, 0, 255, 0.5)', 'rgba(255, 0, 0, 0.5)', 'rgba(0, 255, 0, 0.5)', 'rgba(255, 255, 0, 0.5)', 'rgba(255, 0, 255, 0.5)', 'rgba(255, 128, 0, 0.5)'];
     this._ctx = boardState.boardConfig.ctx;
   }
 
@@ -11,15 +10,6 @@ export class Drawer {
     this._boardState = boardState;
     this._ctx = boardState.boardConfig.ctx;
   }
-
-  set colors(colorArray) { this._colors = colorArray; }
-
-  /*selectPolygonFillColor(polygon) {
-    if(this._colors.length === 0) this._colors = ['rgba(0, 0, 255, 0.5)', 'rgba(255, 0, 0, 0.5)', 'rgba(0, 255, 0, 0.5)', 'rgba(255, 255, 0, 0.5)', 'rgba(255, 0, 255, 0.5)', 'rgba(255, 128, 0, 0.5)'];;
-    const num = Math.floor(Math.random()*this._colors.length);
-    if(polygon) polygon.fillColor = this._colors[num];
-    return this._colors.splice(num, 1)[0];
-  }*/
 
   selectPolygonFillColor(polygon) {
     const h = Math.random() * 360,
@@ -111,7 +101,7 @@ export class Drawer {
       this._ctx.shadowColor = "";
       return;
     }
-    //this._ctx.restore();
+
     this._ctx.stroke();
   }
   
@@ -139,8 +129,6 @@ export class Drawer {
     const {X: startX, Y: startY} = this._viewState.getTransformedPoint(0, 0);
     boardConfigImage.ctx.drawImage(img, -startX, -startY, boardConfigImage.canvas.width, boardConfigImage.canvas.height);
   }
-
-
 
   reDrawBoardState(boardState) {
     this._ctx.clearRect(0,0,boardState.boardConfig.canvas.width, boardState.boardConfig.canvas.height);

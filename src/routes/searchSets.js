@@ -39,7 +39,6 @@ router.get('/confirmed', verifyToken, async (req, res) => {
   }
   
   res.json(searchResults3);
-  //dbHandler.close();
 });
 
 async function searchAllAnnotatedSets(dbHandler) {

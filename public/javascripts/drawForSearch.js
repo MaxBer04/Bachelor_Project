@@ -17,8 +17,6 @@ export class drawerForSearch {
       let img = new Image();
       let realThis = this;
       img.addEventListener("load", function () {
-        //imageWidth = img.width;
-        //imageHeight = img.height;
         realThis.resizeCanvasToFit(img);
         realThis._ctx.clearRect(0,0, realThis._canvas.width, realThis._canvas.height);
         realThis._ctx.drawImage(img, 0, 0, realThis._canvas.width, realThis._canvas.height);

@@ -61,7 +61,6 @@ export class Editor {
     }
   }
 
-  save() {}
   clear() {
     this.clearAttributesAndText();
     this.correctSelectedOption();
@@ -91,7 +90,6 @@ export class Editor {
         return r;
       }, {} ));
 
-      //const uniqueAttributes = [...(new Set(attributeArr))];
       let matches = attributesAndCounts.filter(attribute => {
         const regex = new RegExp(`^${inputText}`, 'gi');
         return attribute.name.match(regex);
@@ -100,7 +98,7 @@ export class Editor {
       if(inputText.length === 0) matches = [];
 
       this.createSuggestions(matches);
-    } catch(error) {console.log(error);}
+    } catch(error) {console.error(error);}
   }
 
   createSuggestions(matches) {
@@ -142,7 +140,7 @@ export class Editor {
     const saveTextField = document.getElementById("saveTextInput");
     const editor = this;
     textField.addEventListener("keydown", function(evt){
-      if((evt.ctrlKey && (evt.key=="y" || evt.key == "Y")) || (evt.ctrlKey && (evt.key=="z" || evt.key=="Z"))) {
+      if(((evt.ctrlKey || evt.metaKey) && (evt.key=="y" || evt.key == "Y")) || ((evt.ctrlKey || evt.metaKey) && (evt.key=="z" || evt.key=="Z"))) {
         evt.preventDefault();
       }
     }, false);
@@ -175,16 +173,11 @@ export class Editor {
   }
 
   initializeEditorSelect() {
-    /* Look for any elements with the class "custom-select": */
     this._selectContainer = document.getElementsByClassName("custom-select")[0];
   
-    /* Create a new DIV that will act as the selected item: */
     this._emulatedSelect = document.createElement("DIV");
     this._emulatedSelect.setAttribute("class", "select-selected");
-    let editor = this;
     this._emulatedSelect.addEventListener("click", function(e) {
-      /* When the select box is clicked, close any other select boxes,
-      and open/close the current select box: */
       this.nextSibling.classList.toggle("select-hide");
       this.classList.toggle("select-arrow-active");
     });
@@ -230,7 +223,6 @@ export class Editor {
     this._emulatedSelect.appendChild(this._emulatedSelectText);
     this._selectContainer.appendChild(this._emulatedSelect);
   
-    /* Create a new DIV that will contain the option list: */
     this._optionList = document.createElement("DIV");
     this._optionList.setAttribute("class", "select-items select-hide");
     this.populateOptionList();
@@ -270,7 +262,7 @@ export class Editor {
 
   correctSelectedOption(polygon) {
     const currentFocusedPolygon = polygon || this.getCurrentlyFocusedPolygon();
-    if(!currentFocusedPolygon || (currentFocusedPolygon && !currentFocusedPolygon.finished)) { // kein Ausgeähltes Polygon
+    if(!currentFocusedPolygon || (currentFocusedPolygon && !currentFocusedPolygon.finished)) { // no selected polygon
       this.removeSelectedOption();
     }
     else {
@@ -291,7 +283,6 @@ export class Editor {
       if(this._optionList.childNodes[i].ID === polygon.ID) return this._optionList.childNodes[i];
     }
   }
-
 
   getOptionDIVByPolygonID(ID) {
     let DIV;
@@ -335,7 +326,6 @@ export class Editor {
   addAndDisplayAttribute(attributeText) {
     const attribute = new poly.Attribute(attributeText);
     if(this.addAttributeToFocusedPolygon(attribute)) this.displayAttribute(attribute);
-    console.log(this.getCurrentlyFocusedPolygon().attributes);
     document.getElementById("attributeInput").value= "";
   }
 
@@ -345,7 +335,7 @@ export class Editor {
       main.customAlert("Please select a Polygon first, to then add attributes to it!");
       return false;
     }
-    if(!focusedPolygon.hasAttribute(attribute.content)) {
+    if(!focusedPolygon.hasAttribute(attribute.content) && attribute.content !== '') {
       focusedPolygon.addAttribute(attribute);
       return true;
     } else return false;
@@ -443,7 +433,6 @@ export class Editor {
   }
 
   closeAllSelect() {
-    /* A function that will close all select boxes */
     this._emulatedSelect.classList.remove("select-arrow-active");
     if(!this._optionList.classList.contains("select-hide")) this._optionList.classList.add("select-hide");
   }

@@ -114,6 +114,20 @@ export default class DBHandler {
 
 
   // GET
+  getVerificationNumber(userID) {
+    const SQL = 'SELECT verificationNumber FROM User WHERE ID = ?;';
+    return new Promise((resolve, reject) => {
+      const statement = this._db.prepare(SQL);
+      statement.get([userID], (err, row) => {
+        if(err) {
+          statement.finalize();
+          reject(err);
+        }
+        statement.finalize();
+        resolve(row.verificationNumber);
+      });
+    });
+  }
   getPasswordHash(email) {
     const SQL = 'SELECT passwordHash FROM User WHERE email = ?;';
     return new Promise((resolve, reject) => {
@@ -175,7 +189,6 @@ export default class DBHandler {
     });
   }
   getEmailByID(ID) {
-    //const SQL = `SELECT email FROM User WHERE ID='${ID}';`;
     const SQL = 'SELECT email FROM User WHERE ID = ?;';
     return new Promise((resolve, reject) => {
       const statement = this._db.prepare(SQL);
@@ -222,7 +235,6 @@ export default class DBHandler {
   }
 
   getAllUsers() {
-    //const SQL = 'SELECT * FROM User;';
     const SQL = 'SELECT * FROM User;';
     return new Promise((resolve, reject) => {
       const statement = this._db.prepare(SQL);
@@ -707,11 +719,11 @@ export default class DBHandler {
     });
   }
   async addUser(user) {
-    const SQL = 'INSERT INTO User(email, passwordHash, ID, verified, first_name, last_name) VALUES (?, ?, null, null, ?, ?);';
+    const SQL = 'INSERT INTO User(email, passwordHash, verificationNumber, ID, verified, first_name, last_name) VALUES (?, ?, ?, null, null, ?, ?);';
     const passwordHash =  await bcrypt.hash(user.password, 10);
     return new Promise((resolve, reject) => {
       const statement = this._db.prepare(SQL);
-      statement.run([user.email, passwordHash, user.firstName, user.lastName], function(error) {
+      statement.run([user.email, passwordHash, user.verificationNumber, user.firstName, user.lastName], function(error) {
         if(error) {
           statement.finalize();
           reject(error);
@@ -925,7 +937,6 @@ export default class DBHandler {
     });
   }
   removeImageSetAsAnnotated(userID, imageSetID) {
-    //const SQL = `DELETE FROM ImageSet_annotated_by_User WHERE userID = ${userID} AND  imageSetID = ${imageSetID};`;
     const SQL = 'DELETE FROM ImageSet_annotated_by_User WHERE userID = ? AND imageSetID = ?;';
     return new Promise((resolve, reject) => {
       const statement = this._db.prepare(SQL);

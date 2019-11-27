@@ -11,17 +11,12 @@ export class ImageSlider{
     this._currentPosition = 6;
     this._arrowsInitialized = false;
     this._isSetLoaded = false;
-    this.initialize();
   }
-
-
-  
 
   initialize() {
     this._currentPosition = 6;
     this.clearSlider();
     this._isSetLoaded = false;
-    this.addEventListeners();
   }
 
   closeUpload() {
@@ -48,8 +43,6 @@ export class ImageSlider{
   }
 
   loadSets() {
-    let lastSet = false;
-    let ID;
     return new Promise((resolve, reject) => {
       const request = new XMLHttpRequest();
       request.open('GET', '/main/setPreviews', true);
@@ -94,7 +87,6 @@ export class ImageSlider{
         }
       })
     }, {})
-    let counter = 0;
     for(let i = 0; i < images.length; i++) {
       const containerDIV = document.createElement("div");
       containerDIV.classList.add("image-container");
@@ -112,13 +104,13 @@ export class ImageSlider{
       this._imagesContainer.appendChild(containerDIV);
 
       image.addEventListener("load", function () {
-        counter++;
-        if(counter === images.length) console.timeEnd();
         image.style.opacity = 1;
       });
-      image.src = images[i].path;
-      //image.setAttribute("data-src", images[i].path);
-      //imgObserver.observe(image);
+      if(i <= 6) image.src = images[i].path;
+      else {
+        image.setAttribute("data-src", images[i].path);
+        imgObserver.observe(image);
+      }
     }
   }
 
@@ -272,20 +264,23 @@ export class ImageSlider{
         realEditor.unlockImage(imageID.imageID);
       });
     }
-    this._imagesContainer.childNodes.forEach( (imageContainer, index, value) => {
+  }
+  
+  addEventListenerForImages() {
+    this._imagesContainer.childNodes.forEach( (imageContainer, index) => {
       imageContainer.addEventListener("click", async (evt) => {
         if(await loadNewImage(imageContainer.firstChild.getAttribute("data-id"), imageContainer.firstChild.src)) {
           if(!imageContainer.classList.contains("active")) {
             imageContainer.classList.add("active");
           }
-          this._imagesContainer.childNodes.forEach((i, index2, value) => {
+          this._imagesContainer.childNodes.forEach((i, index2) => {
             if(index2 !== index && i.classList.contains("active")) i.classList.remove("active");
           })
         }
       })
     }, false);
-
   }
+
 
   unlockImage(imageID) {
     try {
@@ -297,7 +292,7 @@ export class ImageSlider{
           targetImage.parentNode.removeChild(coverDIV);
         }
       } 
-    } catch(error) {console.log(error)}
+    } catch(error) {console.error(error)}
   }
 
   lockImage(infos) {
