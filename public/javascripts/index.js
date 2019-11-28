@@ -8,6 +8,8 @@ import * as login from "./logger.js";
 import * as imageSliderConstructor from './imageSlider.js';
 import * as SearchSetsConstructor from './searchSets.js';
 
+// This is the main class of the client-side javascript logic. It connects all the other different classes and handles most of the logic (except for the search and login)
+
 export let socket;
 let firstTime = true;
 let imageSlider;

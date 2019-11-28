@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// This is the main class for the server-side logic. It connects the different classes and is the first point of access for requests.
 "use strict";
 
 var _interopRequireWildcard = require("@babel/runtime/helpers/interopRequireWildcard");
@@ -39,30 +40,13 @@ var _main = _interopRequireDefault(require("./routes/main.js"));
 
 var _searchSets = _interopRequireDefault(require("./routes/searchSets.js"));
 
-//const privateSSLKey = fs.readFileSync(__dirname + '/SSL/server.key', 'utf8');
-//const certificate = fs.readFileSync(__dirname + '/SSL/server.crt', 'utf8');
-//const credentials = {key: privateSSLKey, cert: certificate, requestCert: false, rejectUnauthorized: false};
-var app = (0, _express["default"])(); //const server = https.createServer(credentials, app);
+var app = (0, _express["default"])();
 
 var server = require('http').createServer(app);
 
 var io = require('socket.io').listen(server);
 
-var connections = [];
-/*const copyNodeModules = require('copy-node-modules');
-const srcDir = '/home/max/Dropbox/COMP UNI/BachelorArbeit/Sketches/Bachelor_Project';
-const dstDir = '/media/max/Samsung_T5/Bachelor_Project';
-copyNodeModules(srcDir, dstDir, { devDependencies: true }, (err, results) => {
-  if (err) {
-    console.error(err);
-    return;
-  }
-  Object.keys(results).forEach(name => {
-    const version = results[name];
-    console.log(`Package name: ${name}, version: ${version}`);
-  });
-});*/
-// view engine setup
+var connections = []; // view engine setup
 
 app.set('views', _path["default"].join(__dirname, '../views'));
 app.set('view engine', 'pug');
@@ -211,9 +195,6 @@ function unlockImagesByUserID(userID) {
       imageID: imageID
     });
   }
-
-  console.log("LOCKLIST: ");
-  console.log(lockList);
 }
 
 function isImageAlreadyLocked(imageID) {

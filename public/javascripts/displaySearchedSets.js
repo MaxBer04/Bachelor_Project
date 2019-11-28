@@ -1,6 +1,9 @@
 import {getBoardIfAnnotated} from './index.js';
 import * as searchDrawer from './drawForSearch.js';
 
+// This class handles the display logic for a result from the search option inside the app
+// There are the two main described views: user view and sets view
+
 export class displaySearchedSets {
   constructor(document) {
     this.document = document;
@@ -30,10 +33,19 @@ export class displaySearchedSets {
       annotationSelect.style.backgroundColor = selectedOption.style.backgroundColor;
       realThis.showNewAnnotation(Number(selectedOption.getAttribute("data-annotationid")));
     }, false);
+    try {
+      userSelect.removeEventListener("change", async (evt) => {
+        await realThis.userSelectEvent(userSelect);
+      }, false);
+    }catch(error) {console.error(error)}
     userSelect.addEventListener("change", async (evt) => {
-      const selectedOption = userSelect.options[userSelect.selectedIndex];
-      await this.changeSelectedUser(this._selectedImageID, Number(selectedOption.getAttribute("data-userid")));
+      await realThis.userSelectEvent(userSelect);
     }, false);
+  }
+
+  async userSelectEvent(userSelect) {
+    const selectedOption = userSelect.options[userSelect.selectedIndex];
+    await this.changeSelectedUser(this._selectedImageID, Number(selectedOption.getAttribute("data-userid")));
   }
 
   async displaySets(searchSetsObj) {
@@ -117,6 +129,7 @@ export class displaySearchedSets {
         imageContainer.classList.add("content-result-image");
         imageContainer.addEventListener("click", async (evt) => {
           this._selectedImageID = imagesInWeekGroups[i].images[k].ID;
+          this._selectedImage = imagesInWeekGroups[i].images[k];
           await this.showAnnotationsForImage(imagesInWeekGroups[i].images[k]);
         });
         const img = new Image();
@@ -160,6 +173,7 @@ export class displaySearchedSets {
         imageContainer.classList.add("content-result-image");
         imageContainer.addEventListener("click", async (evt) => {
           this._selectedImageID = setResults[i].annotatedImages[k].ID;
+          this._selectedImage = setResults[i].annotatedImages[k];
           await this.showAnnotationsForImage(setResults[i].annotatedImages[k]);
         });
         const img = new Image();
@@ -176,7 +190,6 @@ export class displaySearchedSets {
   }
 
   async showAnnotationsForImage(imageObj) {
-    this._selectedImage = imageObj;
     document.getElementsByClassName("cover-search")[0].classList.add("show");
     let userIDToDisplay;
     if(imageObj.annotations) {
@@ -188,8 +201,6 @@ export class displaySearchedSets {
         console.error(error);
       }
     }
-    let boardState = await getBoardIfAnnotated(imageObj.ID, userIDToDisplay);
-    this._boardState = boardState;
     this.clearAllChilds(document.querySelector("#userSelect > select"));
     const url = new URL(window.location.protocol+"//"+window.location.host+"/main/users/all/annotated/"+imageObj.ID);
     let allUsersThatAnnotatedThisImage = []; 
@@ -199,9 +210,12 @@ export class displaySearchedSets {
     } catch(error) {
       console.error(error);
     }
+    if(userIDToDisplay) this._boardState = await getBoardIfAnnotated(imageObj.ID, userIDToDisplay);
+    else this._boardState = await getBoardIfAnnotated(imageObj.ID, allUsersThatAnnotatedThisImage[0].userID);
     this.createUserSelectOptions(allUsersThatAnnotatedThisImage);
-    this.bringUserOptionInFocus(userIDToDisplay);
-    this.fillAnnotationView(boardState);
+    if(userIDToDisplay) this.bringUserOptionInFocus(userIDToDisplay);
+    else this.bringUserOptionInFocus(allUsersThatAnnotatedThisImage[0].userID);
+    this.fillAnnotationView(this._boardState);
   }
 
   async changeSelectedUser(imageID, userID) {

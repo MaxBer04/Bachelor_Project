@@ -19,7 +19,7 @@ var sqlite = require('sqlite3').verbose();
 
 var utf8 = require('utf8');
 
-var DATABASE_PATH = './database/database.db';
+var DATABASE_PATH = './database/database.db'; // This class communicates with the database by translating every method to SQL prepares statements and querying them.
 
 var DBHandler =
 /*#__PURE__*/
@@ -309,7 +309,6 @@ function () {
     value: function getEmailByID(ID) {
       var _this9 = this;
 
-      //const SQL = `SELECT email FROM User WHERE ID='${ID}';`;
       var SQL = 'SELECT email FROM User WHERE ID = ?;';
       return new Promise(function (resolve, reject) {
         var statement = _this9._db.prepare(SQL);
@@ -371,7 +370,6 @@ function () {
     value: function getAllUsers() {
       var _this12 = this;
 
-      //const SQL = 'SELECT * FROM User;';
       var SQL = 'SELECT * FROM User;';
       return new Promise(function (resolve, reject) {
         var statement = _this12._db.prepare(SQL);
@@ -1331,7 +1329,6 @@ function () {
     value: function removeImageSetAsAnnotated(userID, imageSetID) {
       var _this56 = this;
 
-      //const SQL = `DELETE FROM ImageSet_annotated_by_User WHERE userID = ${userID} AND  imageSetID = ${imageSetID};`;
       var SQL = 'DELETE FROM ImageSet_annotated_by_User WHERE userID = ? AND imageSetID = ?;';
       return new Promise(function (resolve, reject) {
         var statement = _this56._db.prepare(SQL);

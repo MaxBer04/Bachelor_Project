@@ -1,5 +1,7 @@
 import * as displaySets from './displaySearchedSets.js';
 
+// This is the main class for the search function. It collects the search criterias and creates a request out of these
+
 export class SearchSets {
   constructor(document) {
     this.initiateEventListeners(document);

@@ -1,5 +1,7 @@
 "use strict";
 
+// This class is used to abstract a group of paths as a polygon
+
 export let IDList = [];
 export let IDListAttributes = [];
 

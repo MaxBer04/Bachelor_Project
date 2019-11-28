@@ -19,7 +19,8 @@ var _login = require("./login.js");
 
 var _databaseHandler = _interopRequireDefault(require("../databaseHandler.js"));
 
-var router = _express["default"].Router();
+var router = _express["default"].Router(); // This class mainly handles the requests for the search function
+
 
 router.get('/', _login.verifyToken, function _callee(req, res) {
   return _regenerator["default"].async(function _callee$(_context) {
@@ -122,7 +123,7 @@ router.get('/confirmed', _login.verifyToken, function _callee2(req, res) {
           break;
 
         case 34:
-          res.json(searchResults3); //dbHandler.close();
+          res.json(searchResults3);
 
         case 35:
         case "end":

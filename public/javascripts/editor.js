@@ -1,6 +1,9 @@
 import * as main from "./index.js";
 import * as poly from "./polygon.js";
 
+// This class handles the logic for the editor which is for example:
+// closing/opening the editor, adding attributes, text usw. to annotations, attribute auto-completion....
+
 export class Editor {
   constructor() {
     this._attributeJSON;

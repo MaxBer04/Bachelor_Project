@@ -3,6 +3,8 @@ import {verifyToken} from './login.js';
 import DBHandler from '../databaseHandler.js';
 const router = express.Router();
 
+// This class mainly handles the requests for the search function
+
 router.get('/', verifyToken, async (req,res) => {
   res.render('search', (err, html) => {
     res.send(html);

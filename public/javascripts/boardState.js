@@ -1,5 +1,7 @@
 import * as poly from "./polygon.js";
 
+// This class handles the State of the Board, which consists of the polygons, the board configuration (the context mainly)
+// and the board state history, which is used to enable the undo redo functionality
 
 
 export function initializeNewBoardState(boardConfig) {

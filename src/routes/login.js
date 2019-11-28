@@ -4,12 +4,16 @@ import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import DBHandler from '../databaseHandler.js';
 import nodemailer from 'nodemailer';
+
+// This class handles the requests for the login screen, as well as the verification of users.
+
 const url = require('url');
 const router = express.Router();
 const urlencodedParser = bodyParser.urlencoded({extended:false});
 router.use(isLoggedIn);
 
-const ADMIN_EMAIL = 'kbertram6@googlemail.com';
+//const ADMIN_EMAIL = 'kbertram6@googlemail.com';
+const ADMIN_EMAIL = fs.readFileSync('./../verificationEmail.txt', 'utf8')
 const VERIFICATION_LINK_START = "http://localhost:3000";
 
 const dbHandler = new DBHandler();

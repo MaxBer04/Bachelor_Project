@@ -1,3 +1,5 @@
+// This class handles the drawing of polygons and images for the board
+
 export class Drawer {
   constructor(boardState, boardConfigImage, viewState) {
     this._boardState = boardState;

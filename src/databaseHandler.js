@@ -3,6 +3,7 @@ const utf8 = require('utf8');
 import bcrypt from 'bcrypt';
 const DATABASE_PATH = './database/database.db';
 
+// This class communicates with the database by translating every method to SQL prepares statements and querying them.
 
 export default class DBHandler {
   constructor() {

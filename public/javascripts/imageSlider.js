@@ -1,5 +1,7 @@
 import {customAlert, loadSetIntoApp, loadNewImage, socket} from './index.js';
 
+// This class handles the display of images after selecting a set and also includes the lazy-load technology
+
 export class ImageSlider{
   constructor(document) {
     this._arrowRight = document.getElementsByClassName("arrow-right")[0];

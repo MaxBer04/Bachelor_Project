@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+// This is the main class for the server-side logic. It connects the different classes and is the first point of access for requests.
+
 import createError from 'http-errors';
 import express from 'express';
 import bodyParser from 'body-parser';

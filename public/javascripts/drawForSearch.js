@@ -1,5 +1,7 @@
 import * as poly from "./polygon.js";
 
+// This class handles the drawing for the presetation view of annotations in the search option
+
 export class drawerForSearch {
   constructor() {
     this._canvas = document.getElementById("searchCanvas");

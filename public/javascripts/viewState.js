@@ -1,3 +1,6 @@
+
+// This class is responsible for the canvas zooming and panning feature
+
 export class ViewState {
   constructor(boardConfig, scaleFactor = 1.05) {
     this._boardConfig = boardConfig;

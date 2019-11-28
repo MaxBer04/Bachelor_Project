@@ -27,6 +27,7 @@ var _databaseHandler = _interopRequireDefault(require("../databaseHandler.js"));
 
 var _nodemailer = _interopRequireDefault(require("nodemailer"));
 
+// This class handles the requests for the login screen, as well as the verification of users.
 var url = require('url');
 
 var router = _express["default"].Router();
@@ -348,22 +349,26 @@ function verifyToken(req, res, next) {
     algorithm: "RS256"
   };
 
-  _jsonwebtoken["default"].verify(req.cookies.token, publicKEY, signOptions, function (err, decodedToken) {
-    if (err !== null) {
-      console.log("LOOGED OUT BECAUSE OF JWT VERIFY ERROR");
-      clearCookies(res);
-      res.redirect("http://localhost:3000/login");
-    }
+  try {
+    _jsonwebtoken["default"].verify(req.cookies.token, publicKEY, signOptions, function (err, decodedToken) {
+      if (err !== null) {
+        console.log("LOOGED OUT BECAUSE JWT VERIFICATION FAILED!");
+        clearCookies(res);
+        res.redirect("http://localhost:3000/login"); // Wird für das Deployen der Applikation angepasst, sobald der Hostname verfügbar ist 
+      }
 
-    req.user = {
-      ID: decodedToken.ID,
-      isAdmin: decodedToken.isAdmin,
-      email: decodedToken.email,
-      firstName: decodedToken.firstName,
-      lastName: decodedToken.lastName
-    };
-    next();
-  });
+      req.user = {
+        ID: decodedToken.ID,
+        isAdmin: decodedToken.isAdmin,
+        email: decodedToken.email,
+        firstName: decodedToken.firstName,
+        lastName: decodedToken.lastName
+      };
+      next();
+    });
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 function verifyTokenSocket(token) {
@@ -374,9 +379,9 @@ function verifyTokenSocket(token) {
   };
   return _jsonwebtoken["default"].verify(token, publicKEY, signOptions, function (err, decodedToken) {
     if (err !== null) {
-      console.log("LOOGED OUT BECAUSE OF JWT VERIFY ERROR");
+      console.log("LOOGED OUT BECAUSE OF JWT VERIFICATION ERROR!");
       clearCookies(res);
-      res.redirect("http://localhost:3000/login");
+      res.redirect("http://localhost:3000/login"); // Wird für das Deployen der Applikation angepasst, sobald der Hostname verfügbar ist
     }
 
     var user = {

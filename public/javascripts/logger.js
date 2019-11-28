@@ -1,6 +1,8 @@
 let waitLoginAnimation = false;
 let switched = false;
 
+// This class handles the client-side javascript logic for the login screen, which is for example sending the login/registration data or checking the data for wrong inputs
+
 export function initialize() {
   
   document.getElementById("login").addEventListener("click", (evt) => {

@@ -5,6 +5,8 @@ import {getUploadSocket} from '../app.js';
 import multer from 'multer';
 import atob from 'atob';
 
+// This is the main access point for the requests from the client-side javascript
+
 const storage = multer.diskStorage({
   destination: function (req, res, cb) {
     cb(null, './uploads')
@@ -72,7 +74,7 @@ router.post("/admins/contactEmails/:newContactMail", verifyToken, async (req, re
   res.status(200).send();
 });
 
-router.get("/users/annotated/:annotationID/", verifyToken, async (req, res) => {
+router.get("/users/annotated/:annotationID", verifyToken, async (req, res) => {
   const annotationID = req.params.annotationID;
   const userObject = await dbHandler.getUserIDFromAnnotationID(annotationID);
   res.json(userObject);

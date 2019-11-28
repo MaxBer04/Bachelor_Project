@@ -1,0 +1,2 @@
+docker build -t maxber04/bachelor_project .
+docker save -o /media/max/7ADC8A524769C628/Bachelor_Project/dockerImage.tar maxber04/bachelor_project
